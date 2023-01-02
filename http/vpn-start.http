@@ -1,5 +1,0 @@
-### Запустить VPN сервер (Xray процесс)
-POST http://localhost:8080/api/vpn/start
-Accept: application/json
-
-###

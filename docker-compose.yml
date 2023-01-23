@@ -6,6 +6,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+      # Добавляем cache_from для контроля кеширования
+      cache_from:
+        - vpn-server:latest
     container_name: vpn-server
     ports:
       - "8080:8080"
@@ -13,7 +16,7 @@ services:
     environment:
       - VPN_XRAY_PATH=/opt/xray/xray
       - VPN_XRAY_PORT=443
-      - VPN_SERVER_ADDRESS=192.168.0.9
+      - VPN_SERVER_ADDRESS=192.168.0.71
       - TARANTOOL_HOST=tarantool
       - TARANTOOL_PORT=3301
       - TARANTOOL_USERNAME=admin

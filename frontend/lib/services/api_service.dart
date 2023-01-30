@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 /// Сервис для работы с VPN клиентами через REST API
 class ApiService {
-  static const String baseUrl = 'http://192.168.0.9:8080/api';
+  static const String baseUrl = 'http://192.168.0.71:8080/api';
 
   /// Создать нового VPN клиента
   /// Если token передан - создает клиента привязанного к пользователю

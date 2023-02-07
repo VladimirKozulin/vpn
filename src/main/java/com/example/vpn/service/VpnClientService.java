@@ -49,20 +49,6 @@ public class VpnClientService {
     }
     
     /**
-     * Получить всех клиентов пользователя
-     */
-    public List<VpnClient> getClientsByUserId(Long userId) {
-        return repository.findByUserId(userId);
-    }
-    
-    /**
-     * Получить всех клиентов (только для админов)
-     */
-    public List<VpnClient> getAllClients() {
-        return repository.findAll();
-    }
-    
-    /**
      * Получить клиента по ID
      */
     public Optional<VpnClient> getClientById(Long id) {
@@ -137,24 +123,6 @@ public class VpnClientService {
         
         VpnClient client = clientOpt.get();
         return client.getUserId() != null && client.getUserId().equals(userId);
-    }
-    
-    /**
-     * Переключить активность клиента (вкл/выкл)
-     */
-    public VpnClient toggleClient(Long id) {
-        Optional<VpnClient> clientOpt = repository.findById(id);
-        
-        if (clientOpt.isEmpty()) {
-            throw new RuntimeException("Клиент не найден");
-        }
-        
-        VpnClient client = clientOpt.get();
-        client.setIsActive(!client.getIsActive());
-        
-        log.info("Переключение активности клиента ID: {} -> {}", id, client.getIsActive());
-        
-        return updateClient(client);
     }
     
     /**

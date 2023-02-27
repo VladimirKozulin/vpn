@@ -15,12 +15,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 /**
  * REST API контроллер для управления VPN клиентами
- * Обновлено для работы с Keycloak
  */
 @Slf4j
 @RestController
@@ -35,7 +33,6 @@ public class VpnClientController {
     /**
      * Создать нового VPN клиента
      * POST /api/clients
-     * Требует аутентификацию через Keycloak
      */
     @PostMapping
     public ResponseEntity<?> createClient(
@@ -56,33 +53,6 @@ public class VpnClientController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", e.getMessage()));
         }
-    }
-    
-    /**
-     * Получить всех клиентов текущего пользователя
-     * GET /api/clients/my
-     */
-    @GetMapping("/my")
-    public ResponseEntity<?> getMyClients(@AuthenticationPrincipal Jwt jwt) {
-        try {
-            User user = keycloakUserService.syncUserFromKeycloak(jwt);
-            List<VpnClient> clients = vpnClientService.getClientsByUserId(user.getId());
-            return ResponseEntity.ok(clients);
-        } catch (Exception e) {
-            log.error("Ошибка получения клиентов пользователя", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", e.getMessage()));
-        }
-    }
-    
-    /**
-     * Получить всех клиентов (только для админов)
-     * GET /api/clients
-     */
-    @GetMapping
-    public ResponseEntity<List<VpnClient>> getAllClients() {
-        List<VpnClient> clients = vpnClientService.getAllClients();
-        return ResponseEntity.ok(clients);
     }
     
     /**
@@ -153,31 +123,6 @@ public class VpnClientController {
         } catch (Exception e) {
             log.error("Ошибка привязки клиента", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
-        }
-    }
-    
-    /**
-     * Переключить активность клиента
-     * POST /api/clients/{id}/toggle
-     */
-    @PostMapping("/{id}/toggle")
-    public ResponseEntity<?> toggleClient(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
-        try {
-            User user = keycloakUserService.syncUserFromKeycloak(jwt);
-            
-            if (!vpnClientService.isClientOwnedByUser(id, user.getId())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Доступ запрещен"));
-            }
-            
-            VpnClient toggled = vpnClientService.toggleClient(id);
-            return ResponseEntity.ok(toggled);
-        } catch (Exception e) {
-            log.error("Ошибка переключения клиента", e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", e.getMessage()));
         }
     }

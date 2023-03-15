@@ -17,6 +17,7 @@ import java.util.Optional;
 
 /**
  * Репозиторий для работы с пользователями в Tarantool
+ * Обновлено для работы с Keycloak
  */
 @Slf4j
 @Repository
@@ -32,33 +33,93 @@ public class UserRepository {
     public User create(User user) {
         try {
             // Генерируем новый ID из sequence
-            // Tarantool возвращает результат sequence напрямую как Integer в первом элементе списка
             List<?> seqResult = tarantoolClient.call("box.sequence.users_seq:next").get();
             Long newId = ((Number) seqResult.get(0)).longValue();
             user.setId(newId);
             user.setCreatedAt(LocalDateTime.now());
             
+            if (user.getLastLoginAt() == null) {
+                user.setLastLoginAt(LocalDateTime.now());
+            }
+            
             // Вставляем в базу
-            // call принимает список аргументов, insert ожидает один аргумент - tuple (массив)
-            // Поэтому оборачиваем tuple в список аргументов: [tuple]
-            List<?> result = tarantoolClient.call(
+            // Формат: id, keycloak_id, email, name, role, created_at, last_login_at
+            tarantoolClient.call(
                 "box.space.users:insert",
                 List.of(List.of(
                     user.getId(),
+                    user.getKeycloakId(),
                     user.getEmail(),
-                    user.getPasswordHash(),
                     user.getName(),
                     user.getRole().name(),
-                    user.getCreatedAt().format(FORMATTER)
+                    user.getCreatedAt().format(FORMATTER),
+                    user.getLastLoginAt().format(FORMATTER)
                 ))
             ).get();
             
-            log.info("Создан пользователь с ID: {}, email: {}", user.getId(), user.getEmail());
+            log.info("Создан пользователь с ID: {}, email: {}, keycloakId: {}", 
+                user.getId(), user.getEmail(), user.getKeycloakId());
             return user;
             
         } catch (Exception e) {
             log.error("Ошибка создания пользователя: {}", e.getMessage(), e);
             throw new RuntimeException("Не удалось создать пользователя: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Обновить данные пользователя
+     */
+    public User update(User user) {
+        try {
+            // Обновляем все поля кроме id и created_at
+            tarantoolClient.call(
+                "box.space.users:update",
+                List.of(
+                    user.getId(),
+                    List.of(
+                        List.of("=", 2, user.getKeycloakId()),
+                        List.of("=", 3, user.getEmail()),
+                        List.of("=", 4, user.getName()),
+                        List.of("=", 5, user.getRole().name()),
+                        List.of("=", 7, user.getLastLoginAt().format(FORMATTER))
+                    )
+                )
+            ).get();
+            
+            log.info("Обновлен пользователь с ID: {}", user.getId());
+            return user;
+            
+        } catch (Exception e) {
+            log.error("Ошибка обновления пользователя: {}", e.getMessage(), e);
+            throw new RuntimeException("Не удалось обновить пользователя: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Найти пользователя по Keycloak ID
+     */
+    public Optional<User> findByKeycloakId(String keycloakId) {
+        try {
+            List<?> result = tarantoolClient.call(
+                "box.space.users.index.keycloak_id:select",
+                List.of(keycloakId)
+            ).get();
+            
+            if (result.isEmpty()) {
+                return Optional.empty();
+            }
+            
+            List<?> tuple = (List<?>) result.get(0);
+            if (tuple.isEmpty()) {
+                return Optional.empty();
+            }
+            
+            return Optional.of(mapToUser(tuple));
+            
+        } catch (Exception e) {
+            log.error("Ошибка поиска пользователя по keycloakId: {}", keycloakId, e);
+            return Optional.empty();
         }
     }
     
@@ -72,13 +133,11 @@ public class UserRepository {
                 List.of(email)
             ).get();
             
-            // Tarantool возвращает [[tuple]] или [[]] если не найдено
             if (result.isEmpty()) {
                 return Optional.empty();
             }
             
             List<?> tuple = (List<?>) result.get(0);
-            // Проверяем что tuple не пустой
             if (tuple.isEmpty()) {
                 return Optional.empty();
             }
@@ -101,13 +160,11 @@ public class UserRepository {
                 List.of(id)
             ).get();
             
-            // Tarantool возвращает [[tuple]] или [[]] если не найдено
             if (result.isEmpty()) {
                 return Optional.empty();
             }
             
             List<?> tuple = (List<?>) result.get(0);
-            // Проверяем что tuple не пустой
             if (tuple.isEmpty()) {
                 return Optional.empty();
             }
@@ -128,16 +185,25 @@ public class UserRepository {
     }
     
     /**
+     * Проверить существует ли пользователь с таким Keycloak ID
+     */
+    public boolean existsByKeycloakId(String keycloakId) {
+        return findByKeycloakId(keycloakId).isPresent();
+    }
+    
+    /**
      * Маппинг tuple из Tarantool в объект User
+     * Формат: id, keycloak_id, email, name, role, created_at, last_login_at
      */
     private User mapToUser(List<?> tuple) {
         User user = new User();
         user.setId(((Number) tuple.get(0)).longValue());
-        user.setEmail((String) tuple.get(1));
-        user.setPasswordHash((String) tuple.get(2));
+        user.setKeycloakId((String) tuple.get(1));
+        user.setEmail((String) tuple.get(2));
         user.setName((String) tuple.get(3));
         user.setRole(UserRole.valueOf((String) tuple.get(4)));
         user.setCreatedAt(LocalDateTime.parse((String) tuple.get(5), FORMATTER));
+        user.setLastLoginAt(LocalDateTime.parse((String) tuple.get(6), FORMATTER));
         return user;
     }
 }

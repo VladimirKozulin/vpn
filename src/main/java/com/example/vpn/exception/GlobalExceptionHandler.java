@@ -1,14 +1,12 @@
 package com.example.vpn.exception;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,7 +18,7 @@ import java.util.Map;
 
 /**
  * Глобальный обработчик исключений для REST API
- * Централизованная обработка ошибок с понятными сообщениями
+ * Обновлено для работы с Keycloak OAuth2
  */
 @Slf4j
 @RestControllerAdvice
@@ -56,24 +54,19 @@ public class GlobalExceptionHandler {
         
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
-            .body(createErrorResponse("Неверный email или пароль", null));
+            .body(createErrorResponse("Ошибка аутентификации", null));
     }
     
     /**
-     * Обработка ошибок JWT токенов
+     * Обработка ошибок JWT токенов от Keycloak
      */
-    @ExceptionHandler({ExpiredJwtException.class, MalformedJwtException.class, SignatureException.class})
-    public ResponseEntity<Map<String, Object>> handleJwtExceptions(Exception ex) {
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<Map<String, Object>> handleJwtExceptions(JwtException ex) {
         log.warn("Ошибка JWT токена: {}", ex.getMessage());
-        
-        String message = "Невалидный токен";
-        if (ex instanceof ExpiredJwtException) {
-            message = "Токен истек";
-        }
         
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
-            .body(createErrorResponse(message, null));
+            .body(createErrorResponse("Невалидный или истекший токен", null));
     }
     
     /**
@@ -89,18 +82,6 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * Обработка всех остальных исключений
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        log.error("Необработанное исключение: {}", ex.getMessage(), ex);
-        
-        return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(createErrorResponse("Внутренняя ошибка сервера", null));
-    }
-    
-    /**
      * Обработка RuntimeException с кастомными сообщениями
      */
     @ExceptionHandler(RuntimeException.class)
@@ -110,6 +91,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(createErrorResponse(ex.getMessage(), null));
+    }
+    
+    /**
+     * Обработка всех остальных исключений
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+        log.error("Необработанное исключение: {}", ex.getMessage(), ex);
+        
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(createErrorResponse("Внутренняя ошибка сервера", null));
     }
     
     /**

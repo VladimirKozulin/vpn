@@ -1,15 +1,18 @@
 package com.example.vpn.controller;
 
 import com.example.vpn.dto.ClaimClientRequest;
+import com.example.vpn.model.User;
 import com.example.vpn.model.VpnClient;
-import com.example.vpn.security.JwtUtil;
 import com.example.vpn.service.ConfigService;
+import com.example.vpn.service.KeycloakUserService;
 import com.example.vpn.service.VpnClientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +20,7 @@ import java.util.Map;
 
 /**
  * REST API контроллер для управления VPN клиентами
- * Поддерживает как гостевой режим, так и авторизованных пользователей
+ * Обновлено для работы с Keycloak
  */
 @Slf4j
 @RestController
@@ -27,59 +30,48 @@ public class VpnClientController {
     
     private final VpnClientService vpnClientService;
     private final ConfigService configService;
-    private final JwtUtil jwtUtil;
+    private final KeycloakUserService keycloakUserService;
     
     /**
      * Создать нового VPN клиента
      * POST /api/clients
-     * 
-     * БЕЗ токена - создает гостевого клиента (userId = null)
-     * С токеном - создает клиента привязанного к пользователю
+     * Требует аутентификацию через Keycloak
      */
     @PostMapping
-    public ResponseEntity<VpnClient> createClient(
+    public ResponseEntity<?> createClient(
             @RequestBody VpnClient client,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+            @AuthenticationPrincipal Jwt jwt) {
         try {
             log.info("Запрос на создание клиента");
             
-            // Если есть токен - извлекаем userId и привязываем клиента
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
-                Long userId = jwtUtil.extractUserId(token);
-                client.setUserId(userId);
-                log.info("Создание клиента для пользователя ID: {}", userId);
-            } else {
-                // Гостевой клиент
-                client.setUserId(null);
-                log.info("Создание гостевого клиента");
-            }
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
+            client.setUserId(user.getId());
+            
+            log.info("Создание клиента для пользователя ID: {}", user.getId());
             
             VpnClient created = vpnClientService.createClient(client);
             return ResponseEntity.ok(created);
         } catch (Exception e) {
             log.error("Ошибка создания клиента", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
         }
     }
     
     /**
      * Получить всех клиентов текущего пользователя
      * GET /api/clients/my
-     * Требует JWT токен
      */
     @GetMapping("/my")
-    public ResponseEntity<?> getMyClients(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getMyClients(@AuthenticationPrincipal Jwt jwt) {
         try {
-            String token = authHeader.substring(7);
-            Long userId = jwtUtil.extractUserId(token);
-            
-            List<VpnClient> clients = vpnClientService.getClientsByUserId(userId);
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
+            List<VpnClient> clients = vpnClientService.getClientsByUserId(user.getId());
             return ResponseEntity.ok(clients);
         } catch (Exception e) {
             log.error("Ошибка получения клиентов пользователя", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Неверный токен"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
         }
     }
     
@@ -96,18 +88,15 @@ public class VpnClientController {
     /**
      * Получить клиента по ID
      * GET /api/clients/{id}
-     * Требует JWT токен, возвращает только свои клиенты
      */
     @GetMapping("/{id}")
     public ResponseEntity<?> getClient(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
+            @AuthenticationPrincipal Jwt jwt) {
         try {
-            String token = authHeader.substring(7);
-            Long userId = jwtUtil.extractUserId(token);
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
             
-            // Проверяем что клиент принадлежит пользователю
-            if (!vpnClientService.isClientOwnedByUser(id, userId)) {
+            if (!vpnClientService.isClientOwnedByUser(id, user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Доступ запрещен"));
             }
@@ -117,27 +106,24 @@ public class VpnClientController {
                 .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             log.error("Ошибка получения клиента", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Неверный токен"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
         }
     }
     
     /**
      * Обновить клиента
      * PUT /api/clients/{id}
-     * Требует JWT токен, можно обновлять только свои клиенты
      */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateClient(
             @PathVariable Long id,
             @RequestBody VpnClient client,
-            @RequestHeader("Authorization") String authHeader) {
+            @AuthenticationPrincipal Jwt jwt) {
         try {
-            String token = authHeader.substring(7);
-            Long userId = jwtUtil.extractUserId(token);
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
             
-            // Проверяем что клиент принадлежит пользователю
-            if (!vpnClientService.isClientOwnedByUser(id, userId)) {
+            if (!vpnClientService.isClientOwnedByUser(id, user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Доступ запрещен"));
             }
@@ -155,17 +141,14 @@ public class VpnClientController {
     /**
      * Привязать гостевого клиента к аккаунту
      * POST /api/clients/claim
-     * Требует JWT токен
      */
     @PostMapping("/claim")
     public ResponseEntity<?> claimClient(
             @Valid @RequestBody ClaimClientRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            @AuthenticationPrincipal Jwt jwt) {
         try {
-            String token = authHeader.substring(7);
-            Long userId = jwtUtil.extractUserId(token);
-            
-            VpnClient claimed = vpnClientService.claimClient(request.getClientUuid(), userId);
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
+            VpnClient claimed = vpnClientService.claimClient(request.getClientUuid(), user.getId());
             return ResponseEntity.ok(claimed);
         } catch (Exception e) {
             log.error("Ошибка привязки клиента", e);
@@ -175,20 +158,17 @@ public class VpnClientController {
     }
     
     /**
-     * Переключить активность клиента (вкл/выкл)
+     * Переключить активность клиента
      * POST /api/clients/{id}/toggle
-     * Требует JWT токен
      */
     @PostMapping("/{id}/toggle")
     public ResponseEntity<?> toggleClient(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
+            @AuthenticationPrincipal Jwt jwt) {
         try {
-            String token = authHeader.substring(7);
-            Long userId = jwtUtil.extractUserId(token);
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
             
-            // Проверяем что клиент принадлежит пользователю
-            if (!vpnClientService.isClientOwnedByUser(id, userId)) {
+            if (!vpnClientService.isClientOwnedByUser(id, user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Доступ запрещен"));
             }
@@ -205,18 +185,15 @@ public class VpnClientController {
     /**
      * Удалить клиента
      * DELETE /api/clients/{id}
-     * Требует JWT токен
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteClient(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String authHeader) {
+            @AuthenticationPrincipal Jwt jwt) {
         try {
-            String token = authHeader.substring(7);
-            Long userId = jwtUtil.extractUserId(token);
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
             
-            // Проверяем что клиент принадлежит пользователю
-            if (!vpnClientService.isClientOwnedByUser(id, userId)) {
+            if (!vpnClientService.isClientOwnedByUser(id, user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Доступ запрещен"));
             }
@@ -233,38 +210,32 @@ public class VpnClientController {
     /**
      * Получить VLESS ссылку для клиента
      * GET /api/clients/{id}/config
-     * Доступно для гостей (без токена) и авторизованных пользователей (только свои)
      */
     @GetMapping("/{id}/config")
     public ResponseEntity<?> getClientConfig(
             @PathVariable Long id,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        
-        // Если есть токен - проверяем владельца
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            try {
-                String token = authHeader.substring(7);
-                Long userId = jwtUtil.extractUserId(token);
-                
-                if (!vpnClientService.isClientOwnedByUser(id, userId)) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("error", "Доступ запрещен"));
-                }
-            } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Неверный токен"));
+            @AuthenticationPrincipal Jwt jwt) {
+        try {
+            User user = keycloakUserService.syncUserFromKeycloak(jwt);
+            
+            if (!vpnClientService.isClientOwnedByUser(id, user.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Доступ запрещен"));
             }
+            
+            return vpnClientService.getClientById(id)
+                .map(client -> {
+                    String link = configService.generateVlessLink(client);
+                    return ResponseEntity.ok(Map.of(
+                        "link", link,
+                        "instruction", "Скопируйте эту ссылку и вставьте в v2rayNG"
+                    ));
+                })
+                .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Ошибка получения конфига клиента", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", e.getMessage()));
         }
-        
-        // Возвращаем конфиг
-        return vpnClientService.getClientById(id)
-            .map(client -> {
-                String link = configService.generateVlessLink(client);
-                return ResponseEntity.ok(Map.of(
-                    "link", link,
-                    "instruction", "Скопируйте эту ссылку и вставьте в v2rayNG"
-                ));
-            })
-            .orElse(ResponseEntity.notFound().build());
     }
 }

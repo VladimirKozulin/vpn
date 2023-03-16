@@ -1,8 +1,0 @@
-### Получить все VPN клиенты текущего пользователя
-# Требует JWT токен
-# Замените <YOUR_JWT_TOKEN> на токен полученный при входе/регистрации
-GET http://localhost:8080/api/clients/my
-Authorization: Bearer <YOUR_JWT_TOKEN>
-Accept: application/json
-
-###

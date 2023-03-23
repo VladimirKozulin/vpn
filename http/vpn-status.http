@@ -1,4 +1,5 @@
 ### Проверить статус VPN сервера
+# VPN автоматически запускается при старте приложения
 GET http://localhost:8080/api/vpn/status
 Accept: application/json
 

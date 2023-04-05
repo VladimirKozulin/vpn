@@ -1,8 +1,0 @@
-### Получить информацию о текущем пользователе
-# Требует JWT токен от Keycloak в заголовке Authorization
-GET http://localhost:8080/api/users/me
-Authorization: Bearer {{access_token}}
-
-### Получить информацию о JWT токене (для отладки)
-GET http://localhost:8080/api/users/token-info
-Authorization: Bearer {{access_token}}

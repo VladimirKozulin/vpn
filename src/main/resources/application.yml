@@ -4,18 +4,18 @@ server:
 # Настройки VPN сервера
 vpn:
   # Путь к бинарнику Xray (в Docker контейнере)
-  xray-path: /opt/xray/xray
+  xray-path: ${VPN_XRAY_PATH:/opt/xray/xray}
   # Порт для VPN подключений (443 - стандартный HTTPS)
-  xray-port: 443
-  # Домен или IP вашего VPS сервера
-  server-address: 192.168.0.71
+  xray-port: ${VPN_XRAY_PORT:443}
+  # Домен или IP вашего VPS сервера (берется из переменной окружения или docker-compose)
+  server-address: ${VPN_SERVER_ADDRESS:192.168.0.71}
 
 # Настройки Tarantool
 tarantool:
-  host: tarantool
-  port: 3301
-  username: admin
-  password: secret
+  host: ${TARANTOOL_HOST:localhost}
+  port: ${TARANTOOL_PORT:3301}
+  username: ${TARANTOOL_USERNAME:admin}
+  password: ${TARANTOOL_PASSWORD:secret}
 
 # Настройки Spring Security с Keycloak
 spring:

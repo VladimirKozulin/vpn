@@ -1,5 +1,6 @@
 package com.example.vpn.listener;
 
+import com.example.vpn.config.VpnProperties;
 import com.example.vpn.service.XrayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class ApplicationStartupListener {
     
     private final XrayService xrayService;
+    private final VpnProperties vpnProperties;
     
     /**
      * Запускается когда Spring Boot приложение полностью готово
@@ -24,14 +26,15 @@ public class ApplicationStartupListener {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        log.info("=== Приложение готово, инициализация VPN сервера ===");
+        log.info("Инициализация VPN сервера");
+        log.info("📍 IP адрес сервера: {}", vpnProperties.getServerAddress());
+        log.info("🔌 Порт VPN: {}", vpnProperties.getXrayPort());
         
         try {
             xrayService.startXray();
-            log.info("✅ VPN сервер успешно запущен при старте приложения");
+            log.info("✅ VPN сервер успешно запущен");
         } catch (Exception e) {
             log.error("❌ Ошибка при запуске VPN сервера", e);
-            // Не прерываем запуск приложения, но логируем ошибку
         }
     }
 }

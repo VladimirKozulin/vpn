@@ -7,24 +7,27 @@ plugins {
 
 android {
     namespace = "com.example.frontend"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36  // Возвращаем SDK 36 для совместимости с плагинами
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "21"
     }
 
     defaultConfig {
         applicationId = "com.example.frontend"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Конфигурация для flutter_appauth
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.example.vpn"
     }
 
     buildTypes {

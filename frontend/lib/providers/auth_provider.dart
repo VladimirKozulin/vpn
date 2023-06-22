@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/user.dart';
 import '../services/auth_service.dart';
-import '../services/api_service.dart';
+import '../services/keycloak_auth_service.dart';
 
-/// Provider для управления аутентификацией пользователя
-/// Обновлено для работы с access и refresh токенами
+/// Provider для управления аутентификацией через Keycloak
 class AuthProvider extends ChangeNotifier {
+  final KeycloakAuthService _keycloakAuth = KeycloakAuthService();
   final AuthService _authService = AuthService();
-  final ApiService _apiService = ApiService();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   User? _currentUser;
   String? _accessToken;
   String? _refreshToken;
+  String? _idToken;
   bool _isLoading = false;
 
   /// Текущий пользователь (null если не авторизован)
   User? get currentUser => _currentUser;
 
-  /// Access токен (короткоживущий, 15 минут)
+  /// Access токен от Keycloak
   String? get accessToken => _accessToken;
 
-  /// Refresh токен (долгоживущий, 30 дней)
+  /// Refresh токен от Keycloak
   String? get refreshToken => _refreshToken;
+
+  /// ID токен от Keycloak
+  String? get idToken => _idToken;
 
   /// Проверка авторизован ли пользователь
   bool get isAuthenticated => _currentUser != null && _accessToken != null;
@@ -43,11 +48,12 @@ class AuthProvider extends ChangeNotifier {
       // Пытаемся загрузить токены из хранилища
       _accessToken = await _secureStorage.read(key: 'access_token');
       _refreshToken = await _secureStorage.read(key: 'refresh_token');
+      _idToken = await _secureStorage.read(key: 'id_token');
 
       if (_accessToken != null && _refreshToken != null) {
         try {
-          // Проверяем access токен и загружаем информацию о пользователе
-          _currentUser = await _authService.getCurrentUser(_accessToken!);
+          // Загружаем информацию о пользователе
+          await _loadUserInfo();
           debugPrint('Пользователь автоматически вошел: ${_currentUser!.email}');
         } catch (e) {
           // Access токен истек - пробуем обновить
@@ -57,7 +63,6 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Ошибка загрузки токенов: $e');
-      // Токены невалидны - очищаем
       await _clearAuth();
     } finally {
       _isLoading = false;
@@ -65,51 +70,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Регистрация нового пользователя
-  Future<void> register(String email, String password, String name) async {
+  /// Вход через Keycloak
+  Future<void> login() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Регистрируем пользователя
-      final response = await _authService.register(email, password, name);
+      final result = await _keycloakAuth.login();
 
-      // Сохраняем токены и данные пользователя
-      _accessToken = response['accessToken'];
-      _refreshToken = response['refreshToken'];
-      _currentUser = User.fromJson(response);
+      _accessToken = result.accessToken;
+      _refreshToken = result.refreshToken;
+      _idToken = result.idToken;
 
-      // Сохраняем токены в secure storage
+      // Сохраняем токены
       await _secureStorage.write(key: 'access_token', value: _accessToken);
       await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      await _secureStorage.write(key: 'id_token', value: _idToken);
 
-      debugPrint('Регистрация успешна: ${_currentUser!.email}');
-    } catch (e) {
-      debugPrint('Ошибка регистрации: $e');
-      rethrow;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Вход в систему
-  Future<void> login(String email, String password) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Входим в систему
-      final response = await _authService.login(email, password);
-
-      // Сохраняем токены и данные пользователя
-      _accessToken = response['accessToken'];
-      _refreshToken = response['refreshToken'];
-      _currentUser = User.fromJson(response);
-
-      // Сохраняем токены в secure storage
-      await _secureStorage.write(key: 'access_token', value: _accessToken);
-      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      // Загружаем информацию о пользователе с нашего backend
+      await _loadUserInfo();
 
       debugPrint('Вход успешен: ${_currentUser!.email}');
     } catch (e) {
@@ -121,15 +100,43 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Регистрация через Keycloak
+  Future<void> register() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final result = await _keycloakAuth.register();
+
+      _accessToken = result.accessToken;
+      _refreshToken = result.refreshToken;
+      _idToken = result.idToken;
+
+      // Сохраняем токены
+      await _secureStorage.write(key: 'access_token', value: _accessToken);
+      await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      await _secureStorage.write(key: 'id_token', value: _idToken);
+
+      // Загружаем информацию о пользователе
+      await _loadUserInfo();
+
+      debugPrint('Регистрация успешна: ${_currentUser!.email}');
+    } catch (e) {
+      debugPrint('Ошибка регистрации: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Выход из системы
   Future<void> logout() async {
     try {
-      // Отзываем refresh токен на сервере
-      if (_accessToken != null && _refreshToken != null) {
-        await _authService.logout(_accessToken!, _refreshToken!);
-      }
+      // Отзываем токены в Keycloak
+      await _keycloakAuth.logout(_idToken);
     } catch (e) {
-      debugPrint('Ошибка при logout на сервере: $e');
+      debugPrint('Ошибка при logout в Keycloak: $e');
     } finally {
       await _clearAuth();
       debugPrint('Пользователь вышел из системы');
@@ -144,45 +151,81 @@ class AuthProvider extends ChangeNotifier {
     }
 
     try {
-      final response = await _authService.refreshToken(_refreshToken!);
+      final result = await _keycloakAuth.refreshToken(_refreshToken!);
 
-      // Обновляем access токен
-      _accessToken = response['accessToken'];
-      _currentUser = User.fromJson(response);
+      _accessToken = result.accessToken;
+      if (result.refreshToken != null) {
+        _refreshToken = result.refreshToken;
+      }
+      if (result.idToken != null) {
+        _idToken = result.idToken;
+      }
 
-      // Сохраняем новый access токен
+      // Сохраняем новые токены
       await _secureStorage.write(key: 'access_token', value: _accessToken);
+      if (_refreshToken != null) {
+        await _secureStorage.write(key: 'refresh_token', value: _refreshToken);
+      }
+      if (_idToken != null) {
+        await _secureStorage.write(key: 'id_token', value: _idToken);
+      }
+
+      // Загружаем информацию о пользователе
+      await _loadUserInfo();
 
       debugPrint('Access токен обновлен');
     } catch (e) {
       debugPrint('Ошибка обновления токена: $e');
-      // Refresh токен невалиден - очищаем все
       await _clearAuth();
       rethrow;
     }
   }
 
-  /// Привязать гостевого клиента к аккаунту
-  Future<void> claimGuestClient(String clientUuid) async {
-    if (!isAuthenticated) {
-      throw Exception('Необходима авторизация');
+  /// Загрузить информацию о пользователе с backend
+  Future<void> _loadUserInfo() async {
+    if (_accessToken == null) {
+      throw Exception('Access токен отсутствует');
     }
 
-    try {
-      await _apiService.claimClient(clientUuid, _accessToken!);
-      debugPrint('Гостевой клиент привязан к аккаунту');
-    } catch (e) {
-      debugPrint('Ошибка привязки клиента: $e');
-      rethrow;
-    }
+    _currentUser = await _authService.getCurrentUser(_accessToken!);
   }
 
   /// Очистить данные аутентификации
   Future<void> _clearAuth() async {
     _accessToken = null;
     _refreshToken = null;
+    _idToken = null;
     _currentUser = null;
     await _secureStorage.delete(key: 'access_token');
     await _secureStorage.delete(key: 'refresh_token');
+    await _secureStorage.delete(key: 'id_token');
+  }
+
+  /// Привязать гостевого клиента к аккаунту (для обратной совместимости)
+  /// В новой архитектуре с Keycloak гостевой режим не поддерживается
+  Future<void> claimGuestClient(String clientUuid) async {
+    if (!isAuthenticated) {
+      throw Exception('Необходима авторизация');
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.0.9:8080/api/clients/claim'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'clientUuid': clientUuid}),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Не удалось привязать клиента');
+      }
+
+      debugPrint('Клиент $clientUuid привязан к аккаунту');
+    } catch (e) {
+      debugPrint('Ошибка привязки клиента: $e');
+      rethrow;
+    }
   }
 }

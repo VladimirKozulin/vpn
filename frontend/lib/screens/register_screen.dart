@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/vpn_provider.dart';
 
-/// Экран регистрации нового пользователя
+/// Экран регистрации через Keycloak
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -12,27 +12,11 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  /// Обработка регистрации
+  /// Обработка регистрации через Keycloak
   Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
-
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -42,24 +26,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final authProvider = context.read<AuthProvider>();
       final vpnProvider = context.read<VpnProvider>();
 
-      // Регистрируем пользователя
-      await authProvider.register(
-        _emailController.text.trim(),
-        _passwordController.text,
-        _nameController.text.trim(),
-      );
+      // Регистрируемся через Keycloak (откроется браузер)
+      await authProvider.register();
 
       // Если был гостевой клиент - привязываем к аккаунту
       try {
         await vpnProvider.claimCurrentClient();
       } catch (e) {
-        // Игнорируем ошибку если нет гостевого клиента
         debugPrint('Нет гостевого клиента для привязки: $e');
       }
 
       // Возвращаемся на главный экран
       if (mounted) {
-        Navigator.popUntil(context, (route) => route.isFirst);
+        Navigator.pop(context);
       }
     } catch (e) {
       setState(() {
@@ -85,212 +64,118 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Иконка
-                  Icon(
-                    Icons.person_add,
-                    size: 80,
-                    color: Colors.blue[600],
-                  ),
-                  const SizedBox(height: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Иконка
+                Icon(
+                  Icons.person_add,
+                  size: 80,
+                  color: Colors.green[600],
+                ),
+                const SizedBox(height: 32),
 
-                  // Заголовок
-                  Text(
-                    'Создать аккаунт',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
+                // Заголовок
+                Text(
+                  'Создать аккаунт',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Заполните данные для регистрации',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Зарегистрируйтесь через Keycloak',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
                   ),
-                  const SizedBox(height: 32),
+                ),
+                const SizedBox(height: 48),
 
-                  // Поле Имя
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Имя',
-                      prefixIcon: const Icon(Icons.person),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
+                // Сообщение об ошибке
+                if (_errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red[200]!),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Введите имя';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Поле Email
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: const Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Введите email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Некорректный email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Поле Пароль
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Пароль',
-                      prefixIcon: const Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Введите пароль';
-                      }
-                      if (value.length < 6) {
-                        return 'Пароль должен быть минимум 6 символов';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Поле Подтверждение пароля
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'Подтвердите пароль',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Подтвердите пароль';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Пароли не совпадают';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Сообщение об ошибке
-                  if (_errorMessage != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.red[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red[200]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red[700]),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: TextStyle(color: Colors.red[700]),
-                            ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red[700]),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: TextStyle(color: Colors.red[700]),
                           ),
-                        ],
-                      ),
-                    ),
-
-                  // Кнопка регистрации
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleRegister,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Зарегистрироваться',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
 
-                  // Ссылка на вход
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Уже есть аккаунт? ',
-                        style: TextStyle(color: Colors.grey[600]),
+                // Кнопка регистрации через Keycloak
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _handleRegister,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.person_add),
+                    label: Text(
+                      _isLoading ? 'Регистрация...' : 'Зарегистрироваться',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text(
-                          'Войти',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[600],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Информация
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.green[700]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Вы будете перенаправлены на страницу регистрации Keycloak',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

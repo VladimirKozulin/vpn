@@ -1,5 +1,0 @@
-### Получить список всех VPN клиентов
-GET http://localhost:8080/api/clients
-Accept: application/json
-
-###

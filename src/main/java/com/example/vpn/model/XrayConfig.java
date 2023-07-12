@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * Модель конфигурации Xray для генерации config.json
- * Это упрощенная версия, содержащая только необходимые поля для VLESS протокола
+ * Поддерживает VLESS протокол с Reality для обхода DPI
  */
 @Data
 public class XrayConfig {
@@ -31,18 +31,27 @@ public class XrayConfig {
     public static class Client {
         private String id;             // UUID клиента
         private String email;          // Опциональное имя клиента
+        private String flow;           // Flow для XTLS (например "xtls-rprx-vision")
     }
     
     @Data
     public static class StreamSettings {
-        private String network = "tcp"; // Тип транспорта (tcp, ws, grpc)
-        private TlsSettings security;   // Настройки TLS
+        private String network = "tcp";      // Тип транспорта (tcp, ws, grpc)
+        private String security;             // "none", "tls", "reality"
+        private RealitySettings realitySettings;  // Настройки Reality
     }
     
     @Data
-    public static class TlsSettings {
-        // Пока оставим пустым, TLS настроим позже
-        // Для начального тестирования можно без TLS (небезопасно, но работает)
+    public static class RealitySettings {
+        private boolean show = false;        // Debug режим
+        private String dest;                 // Целевой сайт (например "www.microsoft.com:443")
+        private List<String> serverNames;    // Список разрешённых SNI
+        private String privateKey;           // Приватный ключ сервера (x25519)
+        private List<String> shortIds;       // Список shortId для клиентов
+        private String fingerprint = "chrome"; // uTLS fingerprint
+        private Long maxTimeDiff = 0L;       // Максимальная разница времени (мс)
+        private String minClientVer = "";    // Минимальная версия клиента
+        private String maxClientVer = "";    // Максимальная версия клиента
     }
     
     @Data

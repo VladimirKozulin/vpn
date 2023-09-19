@@ -112,6 +112,7 @@ public class XrayService {
     /**
      * Генерирует конфигурационный файл для Xray в формате JSON
      * Загружает всех активных клиентов из конфига
+     * Поддерживает Reality протокол для обхода DPI
      */
     public void generateConfigFile() throws IOException {
         XrayConfig config = new XrayConfig();
@@ -132,6 +133,10 @@ public class XrayService {
                 client.setId(vpnClient.getUuid());
                 client.setEmail(vpnClient.getDeviceInfo() != null ? 
                     vpnClient.getDeviceInfo() : "client");
+                // Для Reality с XTLS Vision
+                if (vpnProperties.getReality().isEnabled()) {
+                    client.setFlow("xtls-rprx-vision");
+                }
                 return client;
             })
             .collect(Collectors.toList());
@@ -140,10 +145,33 @@ public class XrayService {
         inboundSettings.setClients(xrayClients);
         inbound.setSettings(inboundSettings);
         
-        // Настройка транспорта (пока без TLS для простоты)
+        // Настройка транспорта с Reality
         XrayConfig.StreamSettings streamSettings = new XrayConfig.StreamSettings();
-        inbound.setStreamSettings(streamSettings);
+        streamSettings.setNetwork("tcp");
         
+        if (vpnProperties.getReality().isEnabled()) {
+            log.info("🔐 Reality протокол включен");
+            streamSettings.setSecurity("reality");
+            
+            XrayConfig.RealitySettings realitySettings = new XrayConfig.RealitySettings();
+            realitySettings.setShow(false);
+            realitySettings.setDest(vpnProperties.getReality().getDest());
+            realitySettings.setServerNames(vpnProperties.getReality().getServerNames());
+            realitySettings.setPrivateKey(vpnProperties.getReality().getPrivateKey());
+            realitySettings.setShortIds(vpnProperties.getReality().getShortIds());
+            realitySettings.setFingerprint(vpnProperties.getReality().getFingerprint());
+            
+            streamSettings.setRealitySettings(realitySettings);
+            
+            log.info("Reality dest: {}", realitySettings.getDest());
+            log.info("Reality serverNames: {}", realitySettings.getServerNames());
+            log.info("Reality shortIds: {}", realitySettings.getShortIds());
+        } else {
+            log.warn("⚠️ Reality отключен - соединение НЕ защищено от DPI!");
+            streamSettings.setSecurity("none");
+        }
+        
+        inbound.setStreamSettings(streamSettings);
         config.setInbounds(List.of(inbound));
         
         // Настройка исходящего подключения (outbound) - прямой доступ в интернет
@@ -157,7 +185,7 @@ public class XrayService {
         String jsonConfig = gson.toJson(config);
         Files.writeString(Path.of(vpnProperties.getConfigPath()), jsonConfig);
         
-        log.info("Конфигурационный файл создан с {} клиентами", xrayClients.size());
+        log.info("✅ Конфигурационный файл создан с {} клиентами", xrayClients.size());
         log.debug("Содержимое конфига:\n{}", jsonConfig);
     }
     

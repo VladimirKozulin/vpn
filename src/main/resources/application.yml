@@ -11,6 +11,28 @@ vpn:
   server-address: ${VPN_SERVER_ADDRESS:192.168.0.71}
   # Путь к конфигурационному файлу Xray
   config-path: ${VPN_CONFIG_PATH:xray-config.json}
+  
+  # Reality настройки (для обхода DPI)
+  reality:
+    # Включить Reality протокол
+    enabled: ${VPN_REALITY_ENABLED:true}
+    # Целевой сайт для маскировки (притворяемся что это Microsoft)
+    dest: ${VPN_REALITY_DEST:www.microsoft.com:443}
+    # Список SNI (Server Name Indication)
+    server-names:
+      - www.microsoft.com
+    # Приватный ключ (генерируется автоматически при первом запуске)
+    # После генерации ОБЯЗАТЕЛЬНО сохраните его здесь!
+    private-key: ${VPN_REALITY_PRIVATE_KEY:0EPIp7y4JjLeA0MLfiK5k4Sb5zswDaywUbymgreNVGU}
+    # Публичный ключ (генерируется автоматически при первом запуске)
+    # После генерации ОБЯЗАТЕЛЬНО сохраните его здесь!
+    public-key: ${VPN_REALITY_PUBLIC_KEY:yYU3c3Wn8oywY962jMKaTP7W1zQ5X3tOabQ1w5W2cmg}
+    # Список shortIds (пустая строка = можно подключаться без shortId)
+    short-ids:
+      - ""
+      - "6ba85179e30d4fc2"
+    # uTLS fingerprint (chrome, firefox, safari, ios, android, edge, 360, qq)
+    fingerprint: ${VPN_REALITY_FINGERPRINT:chrome}
 
 # Логирование
 logging:

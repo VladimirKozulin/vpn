@@ -15,4 +15,4 @@ vpn:
 # Логирование
 logging:
   level:
-    com.example.vpn: INFO
+    com.example.vpn: DEBUG

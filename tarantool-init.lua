@@ -11,21 +11,23 @@ box.once('init', function()
     box.schema.user.grant('admin', 'read,write,execute', 'universe', nil, {if_not_exists = true})
     
     -- ========================================
-    -- Space для пользователей системы
+    -- Space для пользователей системы (обновлено для Keycloak)
     -- ========================================
     local users = box.schema.space.create('users', {if_not_exists = true})
     
     users:format({
         {name = 'id', type = 'unsigned'},
+        {name = 'keycloak_id', type = 'string'},
         {name = 'email', type = 'string'},
-        {name = 'password_hash', type = 'string'},
         {name = 'name', type = 'string'},
-        {name = 'role', type = 'string'}, -- 'GUEST', 'USER', 'ADMIN'
-        {name = 'created_at', type = 'string'}
+        {name = 'role', type = 'string'}, -- 'USER', 'ADMIN'
+        {name = 'created_at', type = 'string'},
+        {name = 'last_login_at', type = 'string'}
     })
     
     -- Индексы для users
     users:create_index('primary', {parts = {'id'}, if_not_exists = true})
+    users:create_index('keycloak_id', {parts = {'keycloak_id'}, unique = true, if_not_exists = true})
     users:create_index('email', {parts = {'email'}, unique = true, if_not_exists = true})
     
     -- Sequence для auto_increment users
@@ -59,40 +61,5 @@ box.once('init', function()
     -- Sequence для auto_increment vpn_clients
     box.schema.sequence.create('vpn_clients_seq', {if_not_exists = true})
     
-    -- ========================================
-    -- Space для refresh токенов
-    -- ========================================
-    local refresh_tokens = box.schema.space.create('refresh_tokens', {if_not_exists = true})
-    
-    refresh_tokens:format({
-        {name = 'id', type = 'unsigned'},
-        {name = 'user_id', type = 'unsigned'},
-        {name = 'token', type = 'string'},
-        {name = 'expires_at', type = 'string'},
-        {name = 'created_at', type = 'string'},
-        {name = 'revoked', type = 'boolean'}
-    })
-    
-    -- Индексы для refresh_tokens
-    refresh_tokens:create_index('primary', {parts = {'id'}, if_not_exists = true})
-    refresh_tokens:create_index('token', {parts = {'token'}, unique = true, if_not_exists = true})
-    refresh_tokens:create_index('user_id', {parts = {'user_id'}, unique = false, if_not_exists = true})
-    
-    -- Sequence для auto_increment refresh_tokens
-    box.schema.sequence.create('refresh_tokens_seq', {if_not_exists = true})
-    
-    -- Функция для удаления истекших токенов
-    function delete_expired_refresh_tokens(current_time)
-        local tokens = box.space.refresh_tokens:select()
-        local deleted = 0
-        for _, token in ipairs(tokens) do
-            if token[4] < current_time then -- expires_at < current_time
-                box.space.refresh_tokens:delete(token[1])
-                deleted = deleted + 1
-            end
-        end
-        return deleted
-    end
-    
-    print('Tarantool initialized successfully with users, vpn_clients and refresh_tokens')
+    print('Tarantool initialized successfully with users and vpn_clients')
 end)

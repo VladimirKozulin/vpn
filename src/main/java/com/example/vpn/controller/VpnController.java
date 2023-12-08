@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -20,6 +21,9 @@ public class VpnController {
     
     private final XrayService xrayService;
     
+    private static final String VPN_RUNNING_MESSAGE = "VPN сервер работает";
+    private static final String VPN_STOPPED_MESSAGE = "VPN сервер остановлен";
+    
     /**
      * Проверяет статус VPN сервера
      * GET /api/vpn/status
@@ -28,10 +32,12 @@ public class VpnController {
     public ResponseEntity<Map<String, Object>> getStatus() {
         boolean isRunning = xrayService.isRunning();
         
-        return ResponseEntity.ok(Map.of(
-            "running", isRunning,
-            "message", isRunning ? "VPN сервер работает" : "VPN сервер остановлен"
-        ));
+        Map<String, Object> response = new HashMap<>();
+        response.put("running", isRunning);
+        response.put("message", isRunning ? VPN_RUNNING_MESSAGE : VPN_STOPPED_MESSAGE);
+
+        return ResponseEntity.ok(response);
     }
+
 }
 

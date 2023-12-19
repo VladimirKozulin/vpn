@@ -7,13 +7,31 @@
         "clients": [
           {
             "id": "918c1ff3-7859-4f28-93ff-1efcfc5ddcb1",
-            "email": "VPN Client"
+            "email": "VPN Client",
+            "flow": "xtls-rprx-vision"
           }
         ],
         "decryption": "none"
       },
       "streamSettings": {
-        "network": "tcp"
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "www.microsoft.com:443",
+          "serverNames": [
+            "www.microsoft.com"
+          ],
+          "privateKey": "0EPIp7y4JjLeA0MLfiK5k4Sb5zswDaywUbymgreNVGU",
+          "shortIds": [
+            "",
+            "6ba85179e30d4fc2"
+          ],
+          "fingerprint": "chrome",
+          "maxTimeDiff": 0,
+          "minClientVer": "",
+          "maxClientVer": ""
+        }
       }
     }
   ],

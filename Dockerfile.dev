@@ -1,0 +1,26 @@
+# Dockerfile для РАЗРАБОТКИ с hot-reload
+# Использует Gradle bootRun для автоматической перезагрузки при изменениях
+
+FROM gradle:8.5-jdk21
+
+WORKDIR /app
+
+# Устанавливаем Xray в отдельную директорию (не в /app)
+RUN mkdir -p /opt/xray && \
+    apt-get update && \
+    apt-get install -y wget unzip && \
+    cd /opt/xray && \
+    wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+    unzip Xray-linux-64.zip && \
+    chmod +x xray && \
+    rm Xray-linux-64.zip geoip.dat geosite.dat && \
+    rm -rf /var/lib/apt/lists/*
+
+# Исходники будут монтироваться через volume в docker-compose
+# Gradle зависимости скачаются при первом запуске
+
+# Открываем порты
+EXPOSE 8080 443
+
+# Запускаем в режиме разработки с автоперезагрузкой
+CMD ["./gradlew", "bootRun", "--no-daemon"]

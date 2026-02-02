@@ -1,1 +1,13 @@
+server:
+  port: 8080
 
+# Настройки VPN сервера
+vpn:
+  # Путь к бинарнику Xray (в Docker контейнере)
+  xray-path: /opt/xray/xray
+  # Порт для VPN подключений (443 - стандартный HTTPS)
+  xray-port: 443
+  # Домен или IP вашего VPS сервера
+  server-address: localhost
+  # UUID для клиента (можно сгенерировать новый)
+  client-uuid: 12345678-1234-1234-1234-123456789abc

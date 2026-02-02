@@ -1,0 +1,5 @@
+### Проверить статус VPN сервера
+GET http://localhost:8080/api/vpn/status
+Accept: application/json
+
+###

@@ -1,7 +1,9 @@
 package com.example.vpn.service;
 
 import com.example.vpn.config.VpnProperties;
+import com.example.vpn.model.VpnClient;
 import com.example.vpn.model.XrayConfig;
+import com.example.vpn.repository.VpnClientRepository;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.RequiredArgsConstructor;
@@ -9,13 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Сервис для управления процессом Xray
@@ -27,6 +28,7 @@ import java.util.List;
 public class XrayService {
     
     private final VpnProperties vpnProperties;
+    private final VpnClientRepository vpnClientRepository;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     
     // Хранит запущенный процесс Xray
@@ -45,7 +47,7 @@ public class XrayService {
             return;
         }
         
-        // Генерируем конфигурационный файл
+        // Генерируем конфигурационный файл с активными клиентами из БД
         generateConfigFile();
         
         // Запускаем процесс Xray
@@ -92,6 +94,22 @@ public class XrayService {
     }
     
     /**
+     * Перезапускает Xray (остановка + запуск)
+     */
+    public void restartXray() throws IOException {
+        log.info("Перезапуск Xray...");
+        stopXray();
+        
+        try {
+            Thread.sleep(1000); // Пауза между остановкой и запуском
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        startXray();
+    }
+    
+    /**
      * Проверяет, запущен ли процесс Xray
      */
     public boolean isRunning() {
@@ -100,6 +118,7 @@ public class XrayService {
     
     /**
      * Генерирует конфигурационный файл для Xray в формате JSON
+     * Загружает всех активных клиентов из БД
      */
     private void generateConfigFile() throws IOException {
         XrayConfig config = new XrayConfig();
@@ -109,13 +128,23 @@ public class XrayService {
         inbound.setPort(vpnProperties.getXrayPort());
         inbound.setProtocol("vless");
         
-        // Настройка клиента
-        XrayConfig.Client client = new XrayConfig.Client();
-        client.setId(vpnProperties.getClientUuid());
-        client.setEmail("user@example.com");
+        // Загружаем всех активных клиентов из БД
+        List<VpnClient> activeClients = vpnClientRepository.findAllActive();
+        log.info("Найдено активных клиентов: {}", activeClients.size());
+        
+        // Конвертируем в Xray клиентов
+        List<XrayConfig.Client> xrayClients = activeClients.stream()
+            .map(vpnClient -> {
+                XrayConfig.Client client = new XrayConfig.Client();
+                client.setId(vpnClient.getUuid());
+                client.setEmail(vpnClient.getDeviceInfo() != null ? 
+                    vpnClient.getDeviceInfo() : "client-" + vpnClient.getId());
+                return client;
+            })
+            .collect(Collectors.toList());
         
         XrayConfig.InboundSettings inboundSettings = new XrayConfig.InboundSettings();
-        inboundSettings.setClients(List.of(client));
+        inboundSettings.setClients(xrayClients);
         inbound.setSettings(inboundSettings);
         
         // Настройка транспорта (пока без TLS для простоты)
@@ -135,7 +164,7 @@ public class XrayService {
         String jsonConfig = gson.toJson(config);
         Files.writeString(Path.of(CONFIG_FILE), jsonConfig);
         
-        log.info("Конфигурационный файл создан: {}", CONFIG_FILE);
+        log.info("Конфигурационный файл создан с {} клиентами", xrayClients.size());
         log.debug("Содержимое конфига:\n{}", jsonConfig);
     }
     

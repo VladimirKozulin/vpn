@@ -5,16 +5,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Контроллер для главной страницы
- * Перенаправляет на страницу с QR кодом
+ * Перенаправляет на UI админку
  */
 @Controller
 public class HomeController {
     
     /**
-     * Главная страница - перенаправляет на QR код
+     * Главная страница - перенаправляет на админку
+     * TODO: Создать UI для управления клиентами
      */
     @GetMapping("/")
     public String home() {
-        return "redirect:/api/vpn/config/qr";
+        // Пока перенаправляем на API документацию
+        return "redirect:/api/clients";
     }
 }

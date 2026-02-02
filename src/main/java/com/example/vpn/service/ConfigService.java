@@ -1,6 +1,7 @@
 package com.example.vpn.service;
 
 import com.example.vpn.config.VpnProperties;
+import com.example.vpn.model.VpnClient;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -26,29 +27,27 @@ public class ConfigService {
     private final VpnProperties vpnProperties;
     
     /**
-     * Генерирует VLESS ссылку для импорта в клиент (v2rayNG, NekoBox и т.д.)
+     * Генерирует VLESS ссылку для конкретного клиента
      * Формат: vless://UUID@SERVER:PORT?параметры#название
      */
-    public String generateVlessLink() {
+    public String generateVlessLink(VpnClient client) {
         // Базовая часть: vless://UUID@адрес:порт
         String base = String.format("vless://%s@%s:%d",
-            vpnProperties.getClientUuid(),
+            client.getUuid(),
             vpnProperties.getServerAddress(),
             vpnProperties.getXrayPort()
         );
         
         // Параметры подключения
-        // encryption=none - VLESS не использует дополнительное шифрование
-        // type=tcp - используем TCP транспорт
-        // security=none - пока без TLS (для начального тестирования)
         String params = "?encryption=none&type=tcp&security=none";
         
         // Название подключения (будет отображаться в клиенте)
-        String name = "#MyVPN";
+        String name = "#" + (client.getDeviceInfo() != null ? 
+            client.getDeviceInfo() : "VPN-" + client.getId());
         
         String vlessLink = base + params + name;
         
-        log.info("Сгенерирована VLESS ссылка: {}", vlessLink);
+        log.info("Сгенерирована VLESS ссылка для клиента ID: {}", client.getId());
         return vlessLink;
     }
     
@@ -56,8 +55,8 @@ public class ConfigService {
      * Генерирует QR код из VLESS ссылки
      * Возвращает изображение в формате Base64 для отображения в HTML
      */
-    public String generateQrCode() throws WriterException, IOException {
-        String vlessLink = generateVlessLink();
+    public String generateQrCode(VpnClient client) throws WriterException, IOException {
+        String vlessLink = generateVlessLink(client);
         
         // Создаем QR код размером 300x300 пикселей
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
@@ -76,16 +75,16 @@ public class ConfigService {
         byte[] imageBytes = outputStream.toByteArray();
         String base64Image = Base64.getEncoder().encodeToString(imageBytes);
         
-        log.info("QR код успешно сгенерирован");
+        log.info("QR код успешно сгенерирован для клиента ID: {}", client.getId());
         return base64Image;
     }
     
     /**
      * Генерирует HTML страницу с QR кодом для удобного сканирования
      */
-    public String generateQrPage() throws WriterException, IOException {
-        String qrCodeBase64 = generateQrCode();
-        String vlessLink = generateVlessLink();
+    public String generateQrPage(VpnClient client) throws WriterException, IOException {
+        String qrCodeBase64 = generateQrCode(client);
+        String vlessLink = generateVlessLink(client);
         
         // Простая HTML страница с QR кодом и ссылкой
         return """
@@ -93,7 +92,7 @@ public class ConfigService {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>VPN Configuration</title>
+                <title>VPN Configuration - Client #%d</title>
                 <style>
                     body {
                         font-family: Arial, sans-serif;
@@ -128,11 +127,22 @@ public class ConfigService {
                         color: #666;
                         font-size: 14px;
                     }
+                    .info {
+                        background: #e3f2fd;
+                        padding: 10px;
+                        border-radius: 5px;
+                        margin-bottom: 20px;
+                    }
                 </style>
             </head>
             <body>
                 <div class="container">
                     <h1>🔐 VPN Configuration</h1>
+                    <div class="info">
+                        <strong>Client ID:</strong> %d<br/>
+                        <strong>Device:</strong> %s<br/>
+                        <strong>Status:</strong> %s
+                    </div>
                     <div class="qr-code">
                         <img src="data:image/png;base64,%s" alt="QR Code"/>
                     </div>
@@ -150,6 +160,13 @@ public class ConfigService {
                 </div>
             </body>
             </html>
-            """.formatted(qrCodeBase64, vlessLink);
+            """.formatted(
+                client.getId(),
+                client.getId(),
+                client.getDeviceInfo() != null ? client.getDeviceInfo() : "Not specified",
+                client.getIsActive() ? "✅ Active" : "❌ Inactive",
+                qrCodeBase64,
+                vlessLink
+            );
     }
 }

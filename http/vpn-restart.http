@@ -1,0 +1,5 @@
+### Перезапустить VPN сервер
+POST http://localhost:8080/api/vpn/restart
+Accept: application/json
+
+###

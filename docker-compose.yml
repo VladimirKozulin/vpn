@@ -1,6 +1,7 @@
 # Docker Compose для разработки с hot-reload
 
 services:
+  # VPN сервер (Spring Boot + Xray)
   vpn-server:
     build:
       context: .
@@ -12,22 +13,41 @@ services:
     environment:
       - VPN_XRAY_PATH=/opt/xray/xray
       - VPN_XRAY_PORT=443
-      # ВАЖНО: Замените на ваш публичный IP или домен
       - VPN_SERVER_ADDRESS=192.168.0.9
-      - VPN_CLIENT_UUID=12345678-1234-1234-1234-123456789abc
+      - TARANTOOL_HOST=tarantool
+      - TARANTOOL_PORT=3301
+      - TARANTOOL_USERNAME=admin
+      - TARANTOOL_PASSWORD=secret
     volumes:
-      # Монтируем весь проект для hot-reload
       - .:/app
-      # Gradle cache для ускорения сборки
       - gradle-cache:/home/gradle/.gradle
     networks:
       - vpn-network
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    depends_on:
+      - tarantool
+
+  # Tarantool база данных
+  tarantool:
+    image: tarantool/tarantool:2.11
+    container_name: tarantool
+    ports:
+      - "3301:3301"
+    environment:
+      - TARANTOOL_USER_NAME=admin
+      - TARANTOOL_USER_PASSWORD=secret
+    volumes:
+      - tarantool-data:/var/lib/tarantool
+      - ./tarantool-init.lua:/opt/tarantool/app.lua
+    networks:
+      - vpn-network
+    command: tarantool /opt/tarantool/app.lua
 
 volumes:
   gradle-cache:
+  tarantool-data:
 
 networks:
   vpn-network:

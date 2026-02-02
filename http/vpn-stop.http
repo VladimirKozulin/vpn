@@ -1,0 +1,5 @@
+### Остановить VPN сервер
+POST http://localhost:8080/api/vpn/stop
+Accept: application/json
+
+###

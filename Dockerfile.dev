@@ -8,12 +8,17 @@ WORKDIR /app
 # Устанавливаем Xray в отдельную директорию (не в /app)
 RUN mkdir -p /opt/xray && \
     apt-get update && \
-    apt-get install -y wget unzip && \
+    apt-get install -y wget unzip curl && \
     cd /opt/xray && \
-    wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
-    unzip Xray-linux-64.zip && \
+    echo "Downloading Xray..." && \
+    wget --timeout=30 --tries=3 https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip || \
+    curl -L -o Xray-linux-64.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+    echo "Extracting Xray..." && \
+    unzip -q Xray-linux-64.zip && \
     chmod +x xray && \
-    rm Xray-linux-64.zip geoip.dat geosite.dat && \
+    ls -la && \
+    ./xray version && \
+    rm -f Xray-linux-64.zip geoip.dat geosite.dat && \
     rm -rf /var/lib/apt/lists/*
 
 # Исходники будут монтироваться через volume в docker-compose

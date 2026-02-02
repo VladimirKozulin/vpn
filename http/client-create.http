@@ -1,0 +1,16 @@
+### Создать нового VPN клиента
+# UUID генерируется автоматически
+POST http://localhost:8080/api/clients
+Content-Type: application/json
+Accept: application/json
+
+{
+  "deviceInfo": "Samsung Galaxy S21",
+  "ipAddress": "192.168.0.10",
+  "country": "Russia",
+  "isActive": true,
+  "trafficLimitGb": 100,
+  "trafficUsedGb": 0.0
+}
+
+###

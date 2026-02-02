@@ -42,6 +42,15 @@ dependencies {
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.google.zxing:javase:3.5.3'
     
+    // Tarantool connector
+    implementation 'io.tarantool:cartridge-driver:0.13.0'
+    
+    // Валидация
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // Thymeleaf для UI
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

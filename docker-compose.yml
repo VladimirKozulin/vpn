@@ -45,6 +45,23 @@ services:
       - vpn-network
     command: tarantool /opt/tarantool/app.lua
 
+  # Tarantool Admin UI (официальный веб-интерфейс)
+  tarantool-ui:
+    image: basiscompany/tarantool-admin
+    container_name: tarantool-ui
+    ports:
+      - "8082:80"
+    environment:
+      - TARANTOOL_HOST=tarantool
+      - TARANTOOL_PORT=3301
+      - TARANTOOL_USER=admin
+      - TARANTOOL_PASSWORD=secret
+    networks:
+      - vpn-network
+    depends_on:
+      - tarantool
+    restart: unless-stopped
+
 volumes:
   gradle-cache:
   tarantool-data:

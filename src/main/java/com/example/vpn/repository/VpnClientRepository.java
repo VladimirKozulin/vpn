@@ -65,8 +65,8 @@ public class VpnClientRepository {
             
             // Парсим результат
             if (result != null && !result.isEmpty()) {
-                List<?> tuple = (List<?>) result.get(0);
-                client.setId(((Number) tuple.get(0)).longValue());
+                List<?> tuple = (List<?>) result.getFirst();
+                client.setId(((Number) tuple.getFirst()).longValue());
             }
             
             log.info("Создан VPN клиент с UUID: {}", client.getUuid());

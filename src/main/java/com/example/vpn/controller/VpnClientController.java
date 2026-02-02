@@ -91,8 +91,7 @@ public class VpnClientController {
             return ResponseEntity.ok(toggled);
         } catch (Exception e) {
             log.error("Ошибка переключения клиента", e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
     

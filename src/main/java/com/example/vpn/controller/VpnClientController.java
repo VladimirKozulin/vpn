@@ -69,7 +69,7 @@ public class VpnClientController {
      * PUT /api/clients/{id}
      */
     @PutMapping("/{id}")
-    public ResponseEntity<VpnClient> updateClient(@PathVariable Long id, @RequestBody VpnClient client) {
+    public ResponseEntity<VpnClient> updateClient(@PathVariable Long id,@RequestBody VpnClient client) {
         try {
             client.setId(id);
             VpnClient updated = vpnClientService.updateClient(client);
@@ -143,7 +143,7 @@ public class VpnClientController {
                     } catch (WriterException | IOException e) {
                         log.error("Ошибка генерации QR кода", e);
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .<String>body("<h1>Ошибка генерации QR кода</h1>");
+                            .body("<h1>Ошибка генерации QR кода</h1>");
                     }
                 })
                 .orElse(ResponseEntity.notFound().build());

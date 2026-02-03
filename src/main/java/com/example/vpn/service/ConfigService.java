@@ -2,22 +2,13 @@ package com.example.vpn.service;
 
 import com.example.vpn.config.VpnProperties;
 import com.example.vpn.model.VpnClient;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Base64;
-
 /**
  * Сервис для генерации конфигурации клиента
- * Создает ссылки и QR коды для подключения к VPN
+ * Создает ссылки для подключения к VPN
  */
 @Slf4j
 @Service
@@ -49,124 +40,5 @@ public class ConfigService {
         
         log.info("Сгенерирована VLESS ссылка для клиента ID: {}", client.getId());
         return vlessLink;
-    }
-    
-    /**
-     * Генерирует QR код из VLESS ссылки
-     * Возвращает изображение в формате Base64 для отображения в HTML
-     */
-    public String generateQrCode(VpnClient client) throws WriterException, IOException {
-        String vlessLink = generateVlessLink(client);
-        
-        // Создаем QR код размером 300x300 пикселей
-        QRCodeWriter qrCodeWriter = new QRCodeWriter();
-        BitMatrix bitMatrix = qrCodeWriter.encode(
-            vlessLink,
-            BarcodeFormat.QR_CODE,
-            300,
-            300
-        );
-        
-        // Конвертируем в PNG изображение
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
-        
-        // Кодируем в Base64 для вставки в HTML
-        byte[] imageBytes = outputStream.toByteArray();
-        String base64Image = Base64.getEncoder().encodeToString(imageBytes);
-        
-        log.info("QR код успешно сгенерирован для клиента ID: {}", client.getId());
-        return base64Image;
-    }
-    
-    /**
-     * Генерирует HTML страницу с QR кодом для удобного сканирования
-     */
-    public String generateQrPage(VpnClient client) throws WriterException, IOException {
-        String qrCodeBase64 = generateQrCode(client);
-        String vlessLink = generateVlessLink(client);
-        
-        // Простая HTML страница с QR кодом и ссылкой
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>VPN Configuration - Client #%d</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        text-align: center;
-                        padding: 50px;
-                        background-color: #f0f0f0;
-                    }
-                    .container {
-                        background: white;
-                        padding: 30px;
-                        border-radius: 10px;
-                        display: inline-block;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    }
-                    h1 {
-                        color: #333;
-                    }
-                    .qr-code {
-                        margin: 20px 0;
-                    }
-                    .link {
-                        word-break: break-all;
-                        background: #f5f5f5;
-                        padding: 15px;
-                        border-radius: 5px;
-                        font-family: monospace;
-                        font-size: 12px;
-                        margin-top: 20px;
-                    }
-                    .instructions {
-                        margin-top: 20px;
-                        color: #666;
-                        font-size: 14px;
-                    }
-                    .info {
-                        background: #e3f2fd;
-                        padding: 10px;
-                        border-radius: 5px;
-                        margin-bottom: 20px;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>🔐 VPN Configuration</h1>
-                    <div class="info">
-                        <strong>Client ID:</strong> %d<br/>
-                        <strong>Device:</strong> %s<br/>
-                        <strong>Status:</strong> %s
-                    </div>
-                    <div class="qr-code">
-                        <img src="data:image/png;base64,%s" alt="QR Code"/>
-                    </div>
-                    <div class="instructions">
-                        <p><strong>Инструкция:</strong></p>
-                        <p>1. Установите v2rayNG на Android</p>
-                        <p>2. Нажмите "+" → "Scan QR code"</p>
-                        <p>3. Отсканируйте код выше</p>
-                        <p>4. Подключитесь!</p>
-                    </div>
-                    <div class="link">
-                        <strong>Или скопируйте ссылку:</strong><br/>
-                        %s
-                    </div>
-                </div>
-            </body>
-            </html>
-            """.formatted(
-                client.getId(),
-                client.getId(),
-                client.getDeviceInfo() != null ? client.getDeviceInfo() : "Not specified",
-                client.getIsActive() ? "✅ Active" : "❌ Inactive",
-                qrCodeBase64,
-                vlessLink
-            );
     }
 }

@@ -38,10 +38,6 @@ dependencies {
     // Gson для работы с JSON конфигами Xray
     implementation 'com.google.code.gson:gson:2.10.1'
     
-    // ZXing для генерации QR кодов
-    implementation 'com.google.zxing:core:3.5.3'
-    implementation 'com.google.zxing:javase:3.5.3'
-    
     // Tarantool connector
     implementation 'io.tarantool:cartridge-driver:0.13.0'
     

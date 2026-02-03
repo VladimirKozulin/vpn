@@ -6,12 +6,16 @@ import java.time.LocalDateTime;
 /**
  * VPN клиент - конечный пользователь VPN сервиса
  * Каждому клиенту выдается уникальный UUID для подключения
+ * Может быть привязан к пользователю или быть гостевым (userId = null)
  */
 @Data
 public class VpnClient {
     
     // ID в базе данных
     private Long id;
+    
+    // ID пользователя-владельца (null для гостевых клиентов)
+    private Long userId;
     
     // Уникальный UUID для Xray (генерируется автоматически)
     private String uuid;

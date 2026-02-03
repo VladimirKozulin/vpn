@@ -13,6 +13,7 @@ import java.util.Optional;
 
 /**
  * Сервис для управления VPN клиентами
+ * Поддерживает как гостевых клиентов (userId = null), так и привязанных к пользователям
  */
 @Slf4j
 @Service
@@ -27,9 +28,10 @@ public class VpnClientService {
     /**
      * Создать нового VPN клиента
      * Автоматически генерирует UUID и перезапускает Xray
+     * @param client - клиент (userId может быть null для гостей)
      */
     public VpnClient createClient(VpnClient client) {
-        log.info("Создание нового VPN клиента");
+        log.info("Создание нового VPN клиента, userId: {}", client.getUserId());
         
         // Сохраняем в БД (UUID генерируется автоматически)
         VpnClient saved = repository.save(client);
@@ -47,7 +49,14 @@ public class VpnClientService {
     }
     
     /**
-     * Получить всех клиентов
+     * Получить всех клиентов пользователя
+     */
+    public List<VpnClient> getClientsByUserId(Long userId) {
+        return repository.findByUserId(userId);
+    }
+    
+    /**
+     * Получить всех клиентов (только для админов)
      */
     public List<VpnClient> getAllClients() {
         return repository.findAll();
@@ -58,6 +67,13 @@ public class VpnClientService {
      */
     public Optional<VpnClient> getClientById(Long id) {
         return repository.findById(id);
+    }
+    
+    /**
+     * Получить клиента по UUID
+     */
+    public Optional<VpnClient> getClientByUuid(String uuid) {
+        return repository.findByUuid(uuid);
     }
     
     /**
@@ -83,6 +99,44 @@ public class VpnClientService {
         }
         
         return updated;
+    }
+    
+    /**
+     * Привязать гостевого клиента к пользователю
+     * @param clientUuid - UUID гостевого клиента
+     * @param userId - ID пользователя
+     */
+    public VpnClient claimClient(String clientUuid, Long userId) {
+        // Находим клиента по UUID
+        VpnClient client = repository.findByUuid(clientUuid)
+            .orElseThrow(() -> new RuntimeException("Клиент не найден"));
+        
+        // Проверяем что клиент гостевой (userId == null)
+        if (client.getUserId() != null) {
+            throw new RuntimeException("Клиент уже привязан к пользователю");
+        }
+        
+        // Привязываем к пользователю
+        client.setUserId(userId);
+        VpnClient updated = repository.update(client);
+        
+        log.info("Клиент UUID: {} привязан к пользователю ID: {}", clientUuid, userId);
+        
+        return updated;
+    }
+    
+    /**
+     * Проверить принадлежит ли клиент пользователю
+     */
+    public boolean isClientOwnedByUser(Long clientId, Long userId) {
+        Optional<VpnClient> clientOpt = repository.findById(clientId);
+        
+        if (clientOpt.isEmpty()) {
+            return false;
+        }
+        
+        VpnClient client = clientOpt.get();
+        return client.getUserId() != null && client.getUserId().equals(userId);
     }
     
     /**

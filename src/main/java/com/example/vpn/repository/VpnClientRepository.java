@@ -43,12 +43,13 @@ public class VpnClientRepository {
                     local seq = box.sequence.vpn_clients_seq:next()
                     local tuple = box.space.vpn_clients:insert({
                         seq,
-                        ...
+                        ...,
                     })
                     return tuple
                     """;
 
             List<Object> params = Arrays.asList(
+                    client.getUserId(), // НОВОЕ ПОЛЕ
                     client.getUuid(),
                     client.getDeviceInfo(),
                     client.getIpAddress(),
@@ -69,11 +70,33 @@ public class VpnClientRepository {
                 client.setId(((Number) tuple.getFirst()).longValue());
             }
 
-            log.info("Создан VPN клиент с UUID: {}", client.getUuid());
+            log.info("Создан VPN клиент с UUID: {}, userId: {}", client.getUuid(), client.getUserId());
             return client;
         } catch (Exception e) {
             log.error("Ошибка создания клиента", e);
             throw new RuntimeException("Не удалось создать клиента", e);
+        }
+    }
+
+    /**
+     * Найти всех клиентов пользователя
+     */
+    public List<VpnClient> findByUserId(Long userId) {
+        try {
+            String luaScript = "return box.space.vpn_clients.index.user_id:select(...)";
+            List<?> result = tarantoolClient.eval(luaScript, Collections.singletonList(userId)).get();
+            
+            if (result == null || result.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            List<?> tuples = (List<?>) result.getFirst();
+            return tuples.stream()
+                    .map(this::tupleToClient)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Ошибка получения клиентов пользователя ID: {}", userId, e);
+            return new ArrayList<>();
         }
     }
 
@@ -160,19 +183,21 @@ public class VpnClientRepository {
         try {
             String luaScript = """
                     return box.space.vpn_clients:update(..., {
-                        {'=', 3, ...},
+                        {'=', 2, ...},
                         {'=', 4, ...},
                         {'=', 5, ...},
                         {'=', 6, ...},
                         {'=', 7, ...},
                         {'=', 8, ...},
                         {'=', 9, ...},
-                        {'=', 10, ...}
+                        {'=', 10, ...},
+                        {'=', 11, ...}
                     })
                     """;
 
             List<Object> params = Arrays.asList(
                     client.getId(),
+                    client.getUserId(), // НОВОЕ ПОЛЕ
                     client.getDeviceInfo(),
                     client.getIpAddress(),
                     client.getCountry(),
@@ -215,25 +240,32 @@ public class VpnClientRepository {
 
         VpnClient client = new VpnClient();
         client.setId(((Number) tuple.get(0)).longValue());
-        client.setUuid((String) tuple.get(1));
-        client.setDeviceInfo((String) tuple.get(2));
-        client.setIpAddress((String) tuple.get(3));
-        client.setCountry((String) tuple.get(4));
-        client.setIsActive((Boolean) tuple.get(5));
-        client.setTrafficLimitGb(((Number) tuple.get(6)).intValue());
-        client.setTrafficUsedGb(((Number) tuple.get(7)).doubleValue());
+        
+        // userId может быть null для гостевых клиентов
+        Object userIdObj = tuple.get(1);
+        if (userIdObj != null) {
+            client.setUserId(((Number) userIdObj).longValue());
+        }
+        
+        client.setUuid((String) tuple.get(2));
+        client.setDeviceInfo((String) tuple.get(3));
+        client.setIpAddress((String) tuple.get(4));
+        client.setCountry((String) tuple.get(5));
+        client.setIsActive((Boolean) tuple.get(6));
+        client.setTrafficLimitGb(((Number) tuple.get(7)).intValue());
+        client.setTrafficUsedGb(((Number) tuple.get(8)).doubleValue());
 
-        String expiresAt = (String) tuple.get(8);
+        String expiresAt = (String) tuple.get(9);
         if (expiresAt != null) {
             client.setExpiresAt(LocalDateTime.parse(expiresAt, FORMATTER));
         }
 
-        String lastConnectedAt = (String) tuple.get(9);
+        String lastConnectedAt = (String) tuple.get(10);
         if (lastConnectedAt != null) {
             client.setLastConnectedAt(LocalDateTime.parse(lastConnectedAt, FORMATTER));
         }
 
-        client.setCreatedAt(LocalDateTime.parse((String) tuple.get(10), FORMATTER));
+        client.setCreatedAt(LocalDateTime.parse((String) tuple.get(11), FORMATTER));
 
         return client;
     }

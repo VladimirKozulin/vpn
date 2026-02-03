@@ -1,0 +1,12 @@
+### Обновить access токен используя refresh токен
+POST http://localhost:8080/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+### Замените YOUR_REFRESH_TOKEN_HERE на refreshToken из ответа login/register
+# Когда accessToken истекает (через 15 минут), используйте этот эндпоинт
+# Ответ содержит новый accessToken и тот же refreshToken
+# Refresh токен действителен 30 дней

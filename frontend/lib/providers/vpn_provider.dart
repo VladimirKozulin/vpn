@@ -67,8 +67,8 @@ class VpnProvider extends ChangeNotifier {
       // Если нет clientId - создаем нового клиента
       if (_clientId == null) {
         debugPrint('Создание нового клиента...');
-        // Передаем токен если пользователь авторизован
-        final token = authProvider.isAuthenticated ? authProvider.jwtToken : null;
+        // Передаем access токен если пользователь авторизован
+        final token = authProvider.isAuthenticated ? authProvider.accessToken : null;
         debugPrint('Токен: ${token != null ? "есть" : "нет"}');
         
         _clientId = await _apiService.createClient(token: token);
@@ -81,7 +81,7 @@ class VpnProvider extends ChangeNotifier {
 
       // Получаем VLESS ссылку
       debugPrint('Получение конфигурации для клиента $_clientId...');
-      final token = authProvider.isAuthenticated ? authProvider.jwtToken : null;
+      final token = authProvider.isAuthenticated ? authProvider.accessToken : null;
       
       try {
         _vlessLink = await _apiService.getClientConfig(_clientId!, token: token);

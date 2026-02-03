@@ -1,5 +1,5 @@
 ### Вход в систему
-# Возвращает JWT токен для авторизованных запросов
+# Возвращает accessToken (15 мин) и refreshToken (30 дней)
 POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 Accept: application/json
@@ -8,5 +8,14 @@ Accept: application/json
   "email": "user@example.com",
   "password": "password123"
 }
+
+### Ответ содержит:
+# - accessToken: JWT токен для API запросов (короткоживущий, 15 минут)
+# - refreshToken: Токен для обновления access токена (долгоживущий, 30 дней)
+# - userId, email, name, role: Информация о пользователе
+# 
+# Сохраните оба токена:
+# - accessToken используйте в заголовке Authorization: Bearer <token>
+# - refreshToken используйте для обновления когда accessToken истечет
 
 ###

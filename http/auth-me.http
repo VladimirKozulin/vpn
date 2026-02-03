@@ -1,8 +1,12 @@
 ### Получить информацию о текущем пользователе
 # Требует JWT токен в заголовке Authorization
-# Замените <YOUR_JWT_TOKEN> на токен полученный при входе/регистрации
+# Замените <YOUR_JWT_TOKEN> на accessToken полученный при входе/регистрации
 GET http://localhost:8080/api/auth/me
 Authorization: Bearer <YOUR_JWT_TOKEN>
 Accept: application/json
+
+### Возвращает: id, email, name, role, createdAt
+# Этот эндпоинт требует валидный accessToken
+# Если токен истек (через 15 минут), используйте /api/auth/refresh
 
 ###

@@ -1,5 +1,5 @@
 ### Регистрация нового пользователя
-# Создает новый аккаунт и возвращает JWT токен
+# Создает новый аккаунт и возвращает accessToken и refreshToken
 POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 Accept: application/json
@@ -9,5 +9,10 @@ Accept: application/json
   "password": "password123",
   "name": "Иван Иванов"
 }
+
+### Ответ содержит:
+# - accessToken: JWT токен для API запросов (15 минут)
+# - refreshToken: Токен для обновления access токена (30 дней)
+# - userId, email, name, role: Информация о пользователе
 
 ###

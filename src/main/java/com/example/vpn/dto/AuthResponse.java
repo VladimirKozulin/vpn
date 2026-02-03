@@ -5,14 +5,17 @@ import lombok.Data;
 
 /**
  * DTO для ответа после успешной аутентификации
- * Содержит JWT токен и информацию о пользователе
+ * Содержит JWT access токен, refresh токен и информацию о пользователе
  */
 @Data
 @AllArgsConstructor
 public class AuthResponse {
     
-    // JWT токен для последующих запросов
-    private String token;
+    // JWT access токен для API запросов (короткоживущий)
+    private String accessToken;
+    
+    // Refresh токен для обновления access токена (долгоживущий)
+    private String refreshToken;
     
     // ID пользователя
     private Long userId;

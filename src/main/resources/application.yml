@@ -17,6 +17,16 @@ tarantool:
   username: admin
   password: secret
 
+# Настройки JWT токенов
+jwt:
+  # Секретный ключ для подписи токенов (минимум 256 бит)
+  # В продакшене использовать переменную окружения!
+  secret: ${JWT_SECRET:my-super-secret-key-for-jwt-token-generation-minimum-256-bits-long-key-for-security}
+  # Время жизни access токена (15 минут в миллисекундах)
+  expiration: 900000
+  # Время жизни refresh токена (30 дней в миллисекундах)
+  refresh-expiration: 2592000000
+
 # Логирование
 logging:
   level:

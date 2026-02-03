@@ -2,7 +2,6 @@ package com.example.vpn.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +17,7 @@ import java.util.function.Function;
 /**
  * Утилита для работы с JWT токенами
  * Генерация, валидация и извлечение данных из токенов
+ * Обновлено для jjwt 0.12+ (без deprecated API)
  */
 @Slf4j
 @Component
@@ -97,17 +97,18 @@ public class JwtUtil {
     
     /**
      * Создать JWT токен
+     * Обновлено для jjwt 0.12+ (без deprecated методов)
      */
     private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
         
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .claims(claims)
+                .subject(subject)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey())
                 .compact();
     }
     
@@ -123,19 +124,7 @@ public class JwtUtil {
             return false;
         }
     }
-    
-    /**
-     * Валидировать токен с проверкой email
-     */
-    public Boolean validateToken(String token, String email) {
-        try {
-            final String extractedEmail = extractEmail(token);
-            return (extractedEmail.equals(email) && !isTokenExpired(token));
-        } catch (Exception e) {
-            log.error("Ошибка валидации токена", e);
-            return false;
-        }
-    }
+
     
     /**
      * Получить ключ для подписи токенов

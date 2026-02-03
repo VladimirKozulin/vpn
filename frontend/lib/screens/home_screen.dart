@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/vpn_provider.dart';
+import 'login_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,6 +12,47 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          // Иконка входа/профиля в правом верхнем углу
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              return IconButton(
+                icon: Icon(
+                  authProvider.isAuthenticated
+                      ? Icons.account_circle // Залогинен - иконка профиля
+                      : Icons.login, // Гость - иконка входа
+                  size: 28,
+                  color: authProvider.isAuthenticated
+                      ? Colors.blue[600]
+                      : Colors.grey[700],
+                ),
+                onPressed: () {
+                  if (authProvider.isAuthenticated) {
+                    // Открываем профиль
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileScreen(),
+                      ),
+                    );
+                  } else {
+                    // Открываем экран входа
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    );
+                  }
+                },
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: Consumer<VpnProvider>(

@@ -1,0 +1,13 @@
+### Регистрация нового пользователя
+# Создает новый аккаунт и возвращает JWT токен
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "name": "Иван Иванов"
+}
+
+###

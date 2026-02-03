@@ -1,0 +1,14 @@
+### Привязать гостевого клиента к аккаунту
+# Требует JWT токен
+# Замените <YOUR_JWT_TOKEN> на токен полученный при входе/регистрации
+# Замените <CLIENT_UUID> на UUID гостевого клиента
+POST http://localhost:8080/api/clients/claim
+Authorization: Bearer <YOUR_JWT_TOKEN>
+Content-Type: application/json
+Accept: application/json
+
+{
+  "clientUuid": "<CLIENT_UUID>"
+}
+
+###

@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_v2ray_plus/flutter_v2ray_plus.dart';
+import 'package:flutter_vless/flutter_vless.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class VpnProvider extends ChangeNotifier {
-  final FlutterV2ray _flutterV2ray = FlutterV2ray();
+  late final FlutterVless _flutterVless;
   final ApiService _apiService = ApiService();
   
   bool _isConnected = false;
@@ -26,11 +26,14 @@ class VpnProvider extends ChangeNotifier {
   }
 
   VpnProvider() {
+    _flutterVless = FlutterVless(onStatusChanged: (status) {
+      debugPrint('VPN Status: $status');
+    });
     _initialize();
   }
 
   Future<void> _initialize() async {
-    await _flutterV2ray.initializeVless(
+    await _flutterVless.initializeVless(
       providerBundleIdentifier: 'com.example.frontend.VPNProvider',
       groupIdentifier: 'group.com.example.frontend',
     );
@@ -55,17 +58,17 @@ class VpnProvider extends ChangeNotifier {
 
       _vlessLink = await _apiService.getClientConfig(_clientId!);
       
-      final parser = FlutterV2ray.parseFromURL(_vlessLink!);
+      final parser = FlutterVless.parseFromURL(_vlessLink!);
       final config = parser.getFullConfiguration();
 
-      final allowed = await _flutterV2ray.requestPermission();
+      final allowed = await _flutterVless.requestPermission();
       if (!allowed) {
         _isConnecting = false;
         notifyListeners();
         return;
       }
 
-      await _flutterV2ray.startVless(
+      await _flutterVless.startVless(
         remark: 'VPN Connection',
         config: config,
       );
@@ -84,7 +87,7 @@ class VpnProvider extends ChangeNotifier {
     if (!_isConnected) return;
 
     try {
-      await _flutterV2ray.stopVless();
+      await _flutterVless.stopVless();
       _isConnected = false;
       _stopTimer();
       _connectionDuration = 0;

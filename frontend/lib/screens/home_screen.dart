@@ -114,11 +114,25 @@ class HomeScreen extends StatelessWidget {
                   GestureDetector(
                     onTap: vpnProvider.isConnecting
                         ? null
-                        : () {
+                        : () async {
                             if (vpnProvider.isConnected) {
                               vpnProvider.disconnect();
                             } else {
-                              vpnProvider.connect();
+                              // Подключаемся с обработкой ошибок
+                              try {
+                                await vpnProvider.connect();
+                              } catch (e) {
+                                // Показываем ошибку пользователю
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Ошибка подключения: $e'),
+                                      backgroundColor: Colors.red,
+                                      duration: const Duration(seconds: 5),
+                                    ),
+                                  );
+                                }
+                              }
                             }
                           },
                     child: Container(

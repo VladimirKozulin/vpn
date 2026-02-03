@@ -18,12 +18,15 @@ class MyApp extends StatelessWidget {
         // AuthProvider должен быть первым
         ChangeNotifierProvider(create: (_) => AuthProvider()..initialize()),
         // VpnProvider зависит от AuthProvider
+        // ProxyProvider автоматически пересоздаст VpnProvider когда AuthProvider изменится
         ChangeNotifierProxyProvider<AuthProvider, VpnProvider>(
           create: (context) => VpnProvider(
-            authProvider: context.read<AuthProvider>(),
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
           ),
-          update: (context, authProvider, vpnProvider) =>
-              vpnProvider ?? VpnProvider(authProvider: authProvider),
+          update: (context, authProvider, previousVpnProvider) {
+            // Возвращаем существующий экземпляр, он уже имеет ссылку на authProvider
+            return previousVpnProvider!;
+          },
         ),
       ],
       child: MaterialApp(

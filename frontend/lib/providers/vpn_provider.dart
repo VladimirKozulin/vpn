@@ -60,25 +60,59 @@ class VpnProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('=== Начало подключения VPN ===');
+      debugPrint('Авторизован: ${authProvider.isAuthenticated}');
+      debugPrint('Текущий clientId: $_clientId');
+      
       // Если нет clientId - создаем нового клиента
       if (_clientId == null) {
+        debugPrint('Создание нового клиента...');
         // Передаем токен если пользователь авторизован
         final token = authProvider.isAuthenticated ? authProvider.jwtToken : null;
+        debugPrint('Токен: ${token != null ? "есть" : "нет"}');
+        
         _clientId = await _apiService.createClient(token: token);
         
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('client_id', _clientId!);
         
-        debugPrint('Создан новый клиент ID: $_clientId, авторизован: ${authProvider.isAuthenticated}');
+        debugPrint('Создан новый клиент ID: $_clientId');
       }
 
       // Получаем VLESS ссылку
+      debugPrint('Получение конфигурации для клиента $_clientId...');
       final token = authProvider.isAuthenticated ? authProvider.jwtToken : null;
-      _vlessLink = await _apiService.getClientConfig(_clientId!, token: token);
+      
+      try {
+        _vlessLink = await _apiService.getClientConfig(_clientId!, token: token);
+      } catch (e) {
+        // Если клиент не найден (404) - очищаем старый ID и создаём нового
+        if (e.toString().contains('404')) {
+          debugPrint('Клиент $_clientId не найден, создаём нового...');
+          _clientId = null;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('client_id');
+          await prefs.remove('client_uuid');
+          
+          // Создаём нового клиента
+          _clientId = await _apiService.createClient(token: token);
+          await prefs.setString('client_id', _clientId!);
+          debugPrint('Создан новый клиент ID: $_clientId');
+          
+          // Получаем конфигурацию для нового клиента
+          _vlessLink = await _apiService.getClientConfig(_clientId!, token: token);
+        } else {
+          rethrow;
+        }
+      }
+      
+      debugPrint('Получена VLESS ссылка: ${_vlessLink?.substring(0, 30)}...');
 
       // Парсим конфигурацию
+      debugPrint('Парсинг конфигурации...');
       final parser = FlutterVless.parseFromURL(_vlessLink!);
       final config = parser.getFullConfiguration();
+      debugPrint('Конфигурация получена');
       
       // Извлекаем UUID из VLESS ссылки (формат: vless://UUID@host:port...)
       // UUID находится между vless:// и @
@@ -93,14 +127,18 @@ class VpnProvider extends ChangeNotifier {
       }
 
       // Запрашиваем разрешение VPN
+      debugPrint('Запрос разрешения VPN...');
       final allowed = await _flutterVless.requestPermission();
       if (!allowed) {
+        debugPrint('Разрешение VPN отклонено пользователем');
         _isConnecting = false;
         notifyListeners();
         return;
       }
+      debugPrint('Разрешение VPN получено');
 
       // Запускаем VPN
+      debugPrint('Запуск VPN...');
       await _flutterVless.startVless(
         remark: 'VPN Connection',
         config: config,
@@ -109,9 +147,11 @@ class VpnProvider extends ChangeNotifier {
       _isConnected = true;
       _startTimer();
       
-      debugPrint('VPN подключен успешно');
-    } catch (e) {
-      debugPrint('Ошибка подключения: $e');
+      debugPrint('=== VPN подключен успешно ===');
+    } catch (e, stackTrace) {
+      debugPrint('=== ОШИБКА подключения VPN ===');
+      debugPrint('Ошибка: $e');
+      debugPrint('StackTrace: $stackTrace');
       rethrow;
     } finally {
       _isConnecting = false;

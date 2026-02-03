@@ -39,16 +39,9 @@ public class SecurityConfig {
             
             // Настраиваем авторизацию запросов
             .authorizeHttpRequests(auth -> auth
-                // Публичные эндпоинты (без токена)
-                .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                .requestMatchers("/api/clients").permitAll() // POST для создания гостя
-                .requestMatchers("/api/clients/*/config").permitAll() // GET конфига для гостей
-                
-                // VPN управление эндпоинты (требуют токен)
-                .requestMatchers("/api/vpn/**").permitAll() // Пока оставляем открытым
-                
-                // Все остальные запросы требуют аутентификации
-                .anyRequest().authenticated()
+                // ВРЕМЕННО: разрешаем все запросы без аутентификации
+                // TODO: добавить JWT фильтр и настроить правильную авторизацию
+                .anyRequest().permitAll()
             )
             
             // Отключаем сессии (используем JWT)

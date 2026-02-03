@@ -46,16 +46,23 @@ class ApiService {
       headers['Authorization'] = 'Bearer $token';
     }
 
+    final url = '$baseUrl/clients/$clientId/config';
+    print('DEBUG: Запрос конфигурации: $url');
+    print('DEBUG: Токен: ${token != null ? "есть (${token.substring(0, 20)}...)" : "нет"}');
+
     final response = await http.get(
-      Uri.parse('$baseUrl/clients/$clientId/config'),
+      Uri.parse(url),
       headers: headers.isNotEmpty ? headers : null,
     );
+
+    print('DEBUG: Статус ответа: ${response.statusCode}');
+    print('DEBUG: Тело ответа: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['link'];
     } else {
-      throw Exception('Не удалось получить конфигурацию');
+      throw Exception('Не удалось получить конфигурацию: ${response.statusCode} - ${response.body}');
     }
   }
 

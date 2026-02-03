@@ -4,16 +4,7 @@
       "port": 443,
       "protocol": "vless",
       "settings": {
-        "clients": [
-          {
-            "id": "bb7a4c86-520f-4f21-8aed-016329cf8c50",
-            "email": "Samsung Galaxy S21"
-          },
-          {
-            "id": "7f75a868-91bf-4daf-9516-a66b06269477",
-            "email": "Flutter Mobile App"
-          }
-        ],
+        "clients": [],
         "decryption": "none"
       },
       "streamSettings": {

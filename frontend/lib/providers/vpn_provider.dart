@@ -86,10 +86,11 @@ class VpnProvider extends ChangeNotifier {
       try {
         _vlessLink = await _apiService.getClientConfig(_clientId!, token: token);
       } catch (e) {
-        // Если клиент не найден (404) - очищаем старый ID и создаём нового
-        if (e.toString().contains('404')) {
-          debugPrint('Клиент $_clientId не найден, создаём нового...');
+        // Если клиент не найден (404) или доступ запрещён (403) - очищаем старый ID
+        if (e.toString().contains('404') || e.toString().contains('403')) {
+          debugPrint('Клиент $_clientId недоступен (${e.toString().contains('404') ? '404' : '403'}), создаём нового...');
           _clientId = null;
+          _clientUuid = null;
           final prefs = await SharedPreferences.getInstance();
           await prefs.remove('client_id');
           await prefs.remove('client_uuid');
@@ -97,7 +98,7 @@ class VpnProvider extends ChangeNotifier {
           // Создаём нового клиента
           _clientId = await _apiService.createClient(token: token);
           await prefs.setString('client_id', _clientId!);
-          debugPrint('Создан новый клиент ID: $_clientId');
+          debugPrint('Создан новый клиент ID: $_clientId для ${authProvider.isAuthenticated ? "авторизованного пользователя" : "гостя"}');
           
           // Получаем конфигурацию для нового клиента
           _vlessLink = await _apiService.getClientConfig(_clientId!, token: token);

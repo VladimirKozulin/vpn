@@ -25,6 +25,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    
     /**
      * Настройка цепочки фильтров безопасности
      */
@@ -47,7 +49,10 @@ public class SecurityConfig {
             // Отключаем сессии (используем JWT)
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            );
+            )
+            
+            // Добавляем JWT фильтр перед стандартным фильтром аутентификации
+            .addFilterBefore(jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }

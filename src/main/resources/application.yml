@@ -16,3 +16,10 @@ tarantool:
   port: 3301
   username: admin
   password: secret
+
+# Логирование
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.example.vpn.security: DEBUG
+    com.example.vpn: INFO

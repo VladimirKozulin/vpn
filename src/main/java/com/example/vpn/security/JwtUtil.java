@@ -112,7 +112,20 @@ public class JwtUtil {
     }
     
     /**
-     * Валидировать токен
+     * Валидировать токен (проверка подписи и срока действия)
+     */
+    public Boolean validateToken(String token) {
+        try {
+            extractAllClaims(token); // Если токен невалидный - выбросит исключение
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            log.error("Ошибка валидации токена: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Валидировать токен с проверкой email
      */
     public Boolean validateToken(String token, String email) {
         try {

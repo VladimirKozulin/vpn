@@ -9,32 +9,10 @@ vpn:
   xray-port: ${VPN_XRAY_PORT:443}
   # Домен или IP вашего VPS сервера (берется из переменной окружения или docker-compose)
   server-address: ${VPN_SERVER_ADDRESS:192.168.0.71}
-
-# Настройки Tarantool
-tarantool:
-  host: ${TARANTOOL_HOST:localhost}
-  port: ${TARANTOOL_PORT:3301}
-  username: ${TARANTOOL_USERNAME:admin}
-  password: ${TARANTOOL_PASSWORD:secret}
-
-# Настройки Spring Security с Keycloak
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # URL для получения публичных ключей Keycloak
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/vpn-realm}
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/vpn-realm/protocol/openid-connect/certs}
-
-# Настройки Keycloak
-keycloak:
-  realm: vpn-realm
-  auth-server-url: ${KEYCLOAK_AUTH_SERVER_URL:http://localhost:8180}
+  # Путь к конфигурационному файлу Xray
+  config-path: ${VPN_CONFIG_PATH:xray-config.json}
 
 # Логирование
 logging:
   level:
-    org.springframework.security: DEBUG
-    org.springframework.security.oauth2: DEBUG
     com.example.vpn: INFO

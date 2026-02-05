@@ -17,12 +17,7 @@ services:
       - VPN_XRAY_PATH=/opt/xray/xray
       - VPN_XRAY_PORT=443
       - VPN_SERVER_ADDRESS=192.168.0.71
-      - TARANTOOL_HOST=tarantool
-      - TARANTOOL_PORT=3301
-      - TARANTOOL_USERNAME=admin
-      - TARANTOOL_PASSWORD=secret
-      - KEYCLOAK_ISSUER_URI=http://keycloak:8180/realms/vpn-realm
-      - KEYCLOAK_JWK_SET_URI=http://keycloak:8180/realms/vpn-realm/protocol/openid-connect/certs
+      - VPN_CONFIG_PATH=xray-config.json
     volumes:
       - .:/app
       - gradle-cache:/home/gradle/.gradle
@@ -31,91 +26,9 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
-    depends_on:
-      - tarantool
-      - keycloak
-
-  # Tarantool база данных
-  tarantool:
-    image: tarantool/tarantool:2.11
-    container_name: tarantool
-    ports:
-      - "3301:3301"
-    environment:
-      - TARANTOOL_USER_NAME=admin
-      - TARANTOOL_USER_PASSWORD=secret
-    volumes:
-      - tarantool-data:/var/lib/tarantool
-      - ./tarantool-init.lua:/opt/tarantool/app.lua
-    networks:
-      - vpn-network
-    command: tarantool /opt/tarantool/app.lua
-
-  # Tarantool Admin UI (официальный веб-интерфейс)
-  tarantool-ui:
-    image: basiscompany/tarantool-admin
-    container_name: tarantool-ui
-    ports:
-      - "8082:80"
-    environment:
-      - TARANTOOL_HOST=tarantool
-      - TARANTOOL_PORT=3301
-      - TARANTOOL_USER=admin
-      - TARANTOOL_PASSWORD=secret
-    networks:
-      - vpn-network
-    depends_on:
-      - tarantool
-    restart: unless-stopped
-
-  # PostgreSQL для Keycloak
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=keycloak
-      - POSTGRES_USER=keycloak
-      - POSTGRES_PASSWORD=keycloak
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - vpn-network
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-    restart: unless-stopped
-
-  # Keycloak - сервер авторизации
-  keycloak:
-    image: quay.io/keycloak/keycloak:23.0
-    container_name: keycloak
-    ports:
-      - "8180:8180"
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-      - KC_DB=postgres
-      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
-      - KC_DB_USERNAME=keycloak
-      - KC_DB_PASSWORD=keycloak
-      - KC_HOSTNAME=localhost
-      - KC_HTTP_PORT=8180
-      - KC_HEALTH_ENABLED=true
-      - KC_METRICS_ENABLED=true
-    command: start-dev --http-port=8180
-    networks:
-      - vpn-network
-    depends_on:
-      - postgres
-    restart: unless-stopped
 
 volumes:
   gradle-cache:
-  tarantool-data:
-  postgres-data:
 
 networks:
   vpn-network:

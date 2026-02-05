@@ -3,7 +3,6 @@ package com.example.vpn.service;
 import com.example.vpn.config.VpnProperties;
 import com.example.vpn.model.VpnClient;
 import com.example.vpn.model.XrayConfig;
-import com.example.vpn.repository.VpnClientRepository;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.RequiredArgsConstructor;
@@ -28,17 +27,14 @@ import java.util.stream.Collectors;
 public class XrayService {
     
     private final VpnProperties vpnProperties;
-    private final VpnClientRepository vpnClientRepository;
+    private final VpnClientService vpnClientService;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     
     // Хранит запущенный процесс Xray
     private Process xrayProcess;
     
-    // Путь к файлу конфигурации
-    private static final String CONFIG_FILE = "xray-config.json";
-    
     /**
-     * Запускает Xray процесс с сгенерированной конфигурацией
+     * Запускает Xray процесс с конфигурацией
      */
     public void startXray() throws IOException {
         // Проверяем, не запущен ли уже процесс
@@ -47,15 +43,12 @@ public class XrayService {
             return;
         }
         
-        // Генерируем конфигурационный файл с активными клиентами из БД
-        generateConfigFile();
-        
         // Запускаем процесс Xray
         log.info("Запуск Xray процесса...");
         ProcessBuilder processBuilder = new ProcessBuilder(
             vpnProperties.getXrayPath(),  // Путь к бинарнику xray
             "run",                         // Команда запуска
-            "-c", CONFIG_FILE              // Указываем файл конфигурации
+            "-c", vpnProperties.getConfigPath()  // Указываем файл конфигурации
         );
         
         // Перенаправляем вывод процесса в логи Java приложения
@@ -118,9 +111,9 @@ public class XrayService {
     
     /**
      * Генерирует конфигурационный файл для Xray в формате JSON
-     * Загружает всех активных клиентов из БД
+     * Загружает всех активных клиентов из конфига
      */
-    private void generateConfigFile() throws IOException {
+    public void generateConfigFile() throws IOException {
         XrayConfig config = new XrayConfig();
         
         // Настройка входящего подключения (inbound)
@@ -128,8 +121,8 @@ public class XrayService {
         inbound.setPort(vpnProperties.getXrayPort());
         inbound.setProtocol("vless");
         
-        // Загружаем всех активных клиентов из БД
-        List<VpnClient> activeClients = vpnClientRepository.findAllActive();
+        // Загружаем всех активных клиентов
+        List<VpnClient> activeClients = vpnClientService.getActiveClients();
         log.info("Найдено активных клиентов: {}", activeClients.size());
         
         // Конвертируем в Xray клиентов
@@ -138,7 +131,7 @@ public class XrayService {
                 XrayConfig.Client client = new XrayConfig.Client();
                 client.setId(vpnClient.getUuid());
                 client.setEmail(vpnClient.getDeviceInfo() != null ? 
-                    vpnClient.getDeviceInfo() : "client-" + vpnClient.getId());
+                    vpnClient.getDeviceInfo() : "client");
                 return client;
             })
             .collect(Collectors.toList());
@@ -162,7 +155,7 @@ public class XrayService {
         
         // Сохраняем конфиг в файл
         String jsonConfig = gson.toJson(config);
-        Files.writeString(Path.of(CONFIG_FILE), jsonConfig);
+        Files.writeString(Path.of(vpnProperties.getConfigPath()), jsonConfig);
         
         log.info("Конфигурационный файл создан с {} клиентами", xrayClients.size());
         log.debug("Содержимое конфига:\n{}", jsonConfig);

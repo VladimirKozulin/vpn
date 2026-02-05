@@ -34,11 +34,11 @@ public class ConfigService {
         
         // Название подключения (будет отображаться в клиенте)
         String name = "#" + (client.getDeviceInfo() != null ? 
-            client.getDeviceInfo() : "VPN-" + client.getId());
+            client.getDeviceInfo() : "VPN-Client");
         
         String vlessLink = base + params + name;
         
-        log.info("Сгенерирована VLESS ссылка для клиента ID: {}", client.getId());
+        log.info("Сгенерирована VLESS ссылка для клиента UUID: {}", client.getUuid());
         return vlessLink;
     }
 }

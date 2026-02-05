@@ -1,0 +1,4 @@
+### Открыть главную страницу с QR кодами
+# Откроется в браузере по адресу http://localhost:8080/
+GET http://localhost:8080/
+Accept: text/html

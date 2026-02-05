@@ -18,6 +18,6 @@ public class VpnProperties {
     // Адрес сервера (IP или домен)
     private String serverAddress;
     
-    // UUID для идентификации клиента
-    private String clientUuid;
+    // Путь к конфигурационному файлу Xray
+    private String configPath;
 }

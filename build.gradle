@@ -28,11 +28,12 @@ dependencies {
     // Spring Boot Web для REST API
     implementation 'org.springframework.boot:spring-boot-starter-web'
     
-    // Spring Security для аутентификации и авторизации
-    implementation 'org.springframework.boot:spring-boot-starter-security'
+    // Thymeleaf для HTML шаблонов
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     
-    // OAuth2 Resource Server для интеграции с Keycloak
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    // ZXing для генерации QR кодов
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:javase:3.5.3'
     
     // DevTools для hot-reload в режиме разработки
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -44,12 +45,8 @@ dependencies {
     // Gson для работы с JSON конфигами Xray
     implementation 'com.google.code.gson:gson:2.10.1'
     
-    // Tarantool connector
-    implementation 'io.tarantool:cartridge-driver:0.13.0'
-    
     // Валидация
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-
     
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

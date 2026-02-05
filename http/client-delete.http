@@ -1,7 +1,0 @@
-### Удалить клиента
-# Замените {id} на реальный ID клиента
-# ВНИМАНИЕ: Это действие необратимо!
-DELETE http://localhost:8080/api/clients/1
-Accept: application/json
-
-###

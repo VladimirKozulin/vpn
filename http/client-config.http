@@ -1,7 +1,0 @@
-### Получить VLESS ссылку для клиента
-# Замените {id} на реальный ID клиента
-# Эту ссылку можно скопировать и вставить в v2rayNG
-GET http://localhost:8080/api/clients/1/config
-Accept: application/json
-
-###

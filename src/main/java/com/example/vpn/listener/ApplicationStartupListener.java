@@ -31,8 +31,13 @@ public class ApplicationStartupListener {
         log.info("🔌 Порт VPN: {}", vpnProperties.getXrayPort());
         
         try {
+            // Генерируем конфигурационный файл если его нет
+            xrayService.generateConfigFile();
+            
+            // Запускаем Xray
             xrayService.startXray();
             log.info("✅ VPN сервер успешно запущен");
+            log.info("🌐 Веб-интерфейс доступен: http://localhost:8080/");
         } catch (Exception e) {
             log.error("❌ Ошибка при запуске VPN сервера", e);
         }

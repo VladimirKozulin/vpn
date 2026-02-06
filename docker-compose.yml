@@ -1,19 +1,16 @@
-# Docker Compose для разработки с hot-reload
+
 
 services:
-  # VPN сервер (Spring Boot + Xray)
   vpn-server:
     build:
       context: .
       dockerfile: Dockerfile.dev
-      # Добавляем cache_from для контроля кеширования
       cache_from:
         - vpn-server:latest
     container_name: vpn-server
     ports:
       - "8080:8080"
       - "443:443"
-    # Загружаем переменные из .env файла
     env_file:
       - .env
     volumes:

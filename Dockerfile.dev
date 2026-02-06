@@ -1,7 +1,4 @@
-# Dockerfile для РАЗРАБОТКИ с hot-reload
-# Multi-stage build: Xray кешируется отдельно от Java кода
 
-# Stage 1: Подготовка Xray (кешируется отдельно)
 FROM gradle:8.5-jdk21 AS xray-builder
 
 WORKDIR /opt/xray
@@ -18,19 +15,13 @@ RUN apt-get update && \
     rm -f Xray-linux-64.zip geoip.dat geosite.dat && \
     rm -rf /var/lib/apt/lists/*
 
-# Stage 2: Основной образ (пересобирается при изменении кода)
+
 FROM gradle:8.5-jdk21
 
 WORKDIR /app
 
-# Копируем Xray из первого stage (используется кеш)
 COPY --from=xray-builder /opt/xray /opt/xray
 
-# Исходники будут монтироваться через volume в docker-compose
-# Gradle зависимости скачаются при первом запуске
-
-# Открываем порты
 EXPOSE 8080 443
 
-# Запускаем в режиме разработки с автоперезагрузкой
 CMD ["./gradlew", "bootRun", "--no-daemon"]

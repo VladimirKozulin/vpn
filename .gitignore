@@ -36,6 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### Environment Variables ###
+.env
+
 ### Flutter/Dart ###
 .dart_tool/
 .flutter-plugins

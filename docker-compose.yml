@@ -13,11 +13,9 @@ services:
     ports:
       - "8080:8080"
       - "443:443"
-    environment:
-      - VPN_XRAY_PATH=/opt/xray/xray
-      - VPN_XRAY_PORT=443
-      - VPN_SERVER_ADDRESS=192.168.0.71
-      - VPN_CONFIG_PATH=xray-config.json
+    # Загружаем переменные из .env файла
+    env_file:
+      - .env
     volumes:
       - .:/app
       - gradle-cache:/home/gradle/.gradle

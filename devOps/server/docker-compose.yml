@@ -1,0 +1,36 @@
+services:
+  vpn-server:
+    build:
+      context: ../../
+      dockerfile: devOps/server/Dockerfile
+      cache_from:
+        - vpn-server:latest
+    container_name: vpn-server
+    ports:
+      - "8080:8080"
+      - "443:443"
+    env_file:
+      - ../../.env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      VPN_XRAY_PATH: /opt/xray/xray  # Переопределяем для Docker (Linux)
+    volumes:
+      - ../../:/app
+      - gradle-cache:/home/gradle/.gradle
+    networks:
+      - vpn-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  gradle-cache:
+    driver: local
+
+networks:
+  vpn-network:
+    external: true

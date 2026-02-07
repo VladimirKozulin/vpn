@@ -103,7 +103,11 @@ public class XrayGrpcClient {
                 .setOperation(operation)
                 .build();
             
-            handlerStub.alterInbound(request);
+            AlterInboundResponse response = handlerStub.alterInbound(request);
+            
+            if (response == null) {
+                throw new RuntimeException("Получен null ответ от Xray API");
+            }
             
             log.info("✅ Пользователь добавлен через gRPC: {}", uuid);
             
@@ -137,7 +141,11 @@ public class XrayGrpcClient {
                 .setOperation(operation)
                 .build();
             
-            handlerStub.alterInbound(request);
+            AlterInboundResponse response = handlerStub.alterInbound(request);
+            
+            if (response == null) {
+                throw new RuntimeException("Получен null ответ от Xray API");
+            }
             
             log.info("✅ Пользователь удалён через gRPC: {}", uuid);
             

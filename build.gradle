@@ -42,11 +42,11 @@ dependencies {
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.google.zxing:javase:3.5.3'
     
-    // gRPC для взаимодействия с Xray API (совместимые версии!)
-    implementation 'io.grpc:grpc-netty-shaded:1.60.0'
-    implementation 'io.grpc:grpc-protobuf:1.60.0'
-    implementation 'io.grpc:grpc-stub:1.60.0'
-    implementation 'com.google.protobuf:protobuf-java:3.25.1'
+    // gRPC для взаимодействия с Xray API (обновлённые версии без уязвимостей)
+    implementation 'io.grpc:grpc-netty-shaded:1.68.1'
+    implementation 'io.grpc:grpc-protobuf:1.68.1'
+    implementation 'io.grpc:grpc-stub:1.68.1'
+    implementation 'com.google.protobuf:protobuf-java:4.29.2'
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
     
     // DevTools для hot-reload в режиме разработки
@@ -68,11 +68,11 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.25.1"
+        artifact = "com.google.protobuf:protoc:4.29.2"
     }
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.60.0'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.68.1'
         }
     }
     generateProtoTasks {

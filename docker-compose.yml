@@ -2,11 +2,23 @@
 # Главный docker-compose файл
 
 services:
-  # PostgreSQL база данных
+  # PostgreSQL база данных для VPN
   postgres:
     extends:
       file: devOps/data/docker-compose.yml
       service: postgres
+
+  # PostgreSQL база данных для Keycloak
+  keycloak-postgres:
+    extends:
+      file: devOps/auth/docker-compose.yml
+      service: keycloak-postgres
+
+  # Keycloak сервер аутентификации
+  keycloak:
+    extends:
+      file: devOps/auth/docker-compose.yml
+      service: keycloak
 
   # VPN сервер
   vpn-server:
@@ -16,6 +28,8 @@ services:
 
 volumes:
   postgres-data:
+    driver: local
+  keycloak-postgres-data:
     driver: local
   gradle-cache:
     driver: local

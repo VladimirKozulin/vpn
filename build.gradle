@@ -38,6 +38,11 @@ dependencies {
     // PostgreSQL драйвер
     runtimeOnly 'org.postgresql:postgresql'
     
+    // OAuth2 + Keycloak интеграция
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    
     // ZXing для генерации QR кодов
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.google.zxing:javase:3.5.3'

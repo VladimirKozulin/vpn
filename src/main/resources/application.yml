@@ -15,7 +15,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: drop
     show-sql: false
     properties:
       hibernate:
@@ -33,6 +33,25 @@ spring:
     scheduling:
       pool:
         size: 5
+  
+  # OAuth2 + Keycloak настройки
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: ${KEYCLOAK_CLIENT_ID:vpn-client}
+            client-secret: ${KEYCLOAK_CLIENT_SECRET}
+            scope: openid,profile,email
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:vpn}
+            user-name-attribute: preferred_username
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:vpn}
 
 # Настройки VPN сервера
 vpn:
@@ -63,6 +82,7 @@ logging:
     org.hibernate: WARN  # Убираем подробные логи Hibernate
     org.springframework.web: INFO  # Убираем DEBUG логи Spring Web
     org.springframework.boot: INFO  # Убираем DEBUG логи Spring Boot
+    org.springframework.security: DEBUG  # Включаем логи Security для отладки
   pattern:
     console: "%d{dd.MM HH:mm:ss} %clr(%-5level) %clr(%logger{20}){cyan} : %msg%n"
     # Формат: 07.02 09:51:09 INFO  HomeController : 🔗 Генерация VLESS ссылки...

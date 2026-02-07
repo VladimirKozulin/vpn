@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -156,8 +157,15 @@ public class XrayService {
         vpnInbound.setProtocol("vless");
         
         // Загружаем всех активных клиентов
-        List<VpnClient> activeClients = vpnClientService.getActiveClients();
-        log.info("Найдено активных клиентов: {}", activeClients.size());
+        List<VpnClient> activeClients;
+        try {
+            activeClients = vpnClientService.getActiveClients();
+            log.info("Найдено активных клиентов: {}", activeClients.size());
+        } catch (Exception e) {
+            // При первом запуске таблица может не существовать
+            log.warn("Не удалось загрузить клиентов из БД (возможно первый запуск): {}", e.getMessage());
+            activeClients = new ArrayList<>();
+        }
         
         // Конвертируем в Xray клиентов
         List<XrayConfig.Client> xrayClients = activeClients.stream()

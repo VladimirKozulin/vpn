@@ -14,7 +14,7 @@ services:
     networks:
       - vpn-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DB_USERNAME:-keycloak}"]
+      test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DB_USERNAME:-keycloak} -d ${KEYCLOAK_DB_NAME:-keycloak_db}"]
       interval: 10s
       timeout: 5s
       retries: 5

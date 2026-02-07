@@ -13,7 +13,7 @@ services:
     networks:
       - vpn-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-vpn_db}"]
       interval: 10s
       timeout: 5s
       retries: 5

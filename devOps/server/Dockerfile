@@ -3,12 +3,12 @@ FROM gradle:8.5-jdk21 AS xray-builder
 
 WORKDIR /opt/xray
 
+# Скачиваем готовый бинарник Xray
 RUN apt-get update && \
-    apt-get install -y wget unzip curl && \
-    echo "Downloading Xray..." && \
-    wget --timeout=30 --tries=3 https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip || \
-    curl -L -o Xray-linux-64.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
-    echo "Extracting Xray..." && \
+    apt-get install -y wget unzip && \
+    echo "Downloading Xray binary..." && \
+    wget -O Xray-linux-64.zip https://github.com/XTLS/Xray-core/releases/download/v24.12.18/Xray-linux-64.zip && \
+    echo "Extracting..." && \
     unzip -q Xray-linux-64.zip && \
     chmod +x xray && \
     ./xray version && \

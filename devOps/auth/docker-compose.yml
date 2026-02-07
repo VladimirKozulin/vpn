@@ -28,6 +28,7 @@ services:
       - start-dev
       - --hostname-strict=false
       - --proxy-headers=xforwarded
+      - --import-realm
     environment:
       # Настройки БД
       KC_DB: postgres
@@ -52,6 +53,8 @@ services:
     ports:
       - "${KEYCLOAK_PORT:-8180}:8080"
     volumes:
+      # Realm конфигурация для автоматического импорта
+      - ./vpn-realm.json:/opt/keycloak/data/import/vpn-realm.json:ro
       # Если захотим использовать SSL сертификат позже
       - ../../src/main/resources/ssl:/opt/keycloak/ssl:ro
     networks:

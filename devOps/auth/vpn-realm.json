@@ -29,7 +29,7 @@
     ]
   },
   "defaultRoles": [
-    "vpn-user"
+    "user"
   ],
   "clients": [
     {
@@ -56,6 +56,19 @@
       "serviceAccountsEnabled": true,
       "authorizationServicesEnabled": true,
       "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
       },

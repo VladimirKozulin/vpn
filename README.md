@@ -210,3 +210,220 @@ last_connected_at   TIMESTAMP
 - **Client Secret**: (в .env)
 - **Role**: user
 - **Valid Redirect URIs**: https://localhost:8080/*
+
+
+## 🛠️ Полезные Команды
+
+### Docker Контейнеры
+
+```bash
+# Посмотреть запущенные контейнеры
+docker ps
+
+# Посмотреть все контейнеры (включая остановленные)
+docker ps -a
+
+# Посмотреть логи контейнера
+docker logs vpn-server
+docker logs keycloak
+docker logs vpn-postgres
+docker logs keycloak-postgres
+
+# Посмотреть логи в реальном времени
+docker logs -f vpn-server
+
+# Зайти внутрь контейнера
+docker exec -it vpn-server bash
+docker exec -it keycloak bash
+docker exec -it vpn-postgres bash
+
+# Перезапустить контейнер
+docker-compose restart vpn-server
+docker-compose restart keycloak
+
+# Остановить все контейнеры
+docker-compose down
+
+# Удалить контейнеры и volumes
+docker-compose down -v
+```
+
+### База Данных VPN (PostgreSQL)
+
+```bash
+# Зайти в PostgreSQL контейнер
+docker exec -it vpn-postgres psql -U postgres -d vpn_db
+
+# Или через docker-compose
+docker-compose exec postgres psql -U postgres -d vpn_db
+```
+
+**SQL команды внутри PostgreSQL:**
+
+```sql
+-- Посмотреть все таблицы
+\dt
+
+-- Описание таблицы vpn_clients
+\d vpn_clients
+
+-- Посмотреть всех клиентов
+SELECT * FROM vpn_clients;
+
+-- Посмотреть активных клиентов
+SELECT id, email, uuid, is_active, created_at FROM vpn_clients WHERE is_active = true;
+
+-- Посмотреть клиента по email
+SELECT * FROM vpn_clients WHERE email = 'user@example.com';
+
+-- Посмотреть клиента по Keycloak ID
+SELECT * FROM vpn_clients WHERE keycloak_user_id = 'uuid-here';
+
+-- Количество клиентов
+SELECT COUNT(*) FROM vpn_clients;
+
+-- Последние 10 зарегистрированных
+SELECT email, created_at FROM vpn_clients ORDER BY created_at DESC LIMIT 10;
+
+-- Выйти из psql
+\q
+```
+
+### База Данных Keycloak (PostgreSQL)
+
+```bash
+# Зайти в Keycloak PostgreSQL
+docker exec -it keycloak-postgres psql -U keycloak -d keycloak_db
+
+# Или через docker-compose
+docker-compose exec keycloak-postgres psql -U keycloak -d keycloak_db
+```
+
+**SQL команды для Keycloak:**
+
+```sql
+-- Посмотреть все таблицы
+\dt
+
+-- Посмотреть всех пользователей
+SELECT id, username, email, created_timestamp FROM user_entity;
+
+-- Посмотреть пользователей realm 'vpn'
+SELECT u.id, u.username, u.email, u.created_timestamp 
+FROM user_entity u 
+JOIN realm r ON u.realm_id = r.id 
+WHERE r.name = 'vpn';
+
+-- Посмотреть клиентов (applications)
+SELECT id, client_id, name, enabled FROM client WHERE realm_id = (SELECT id FROM realm WHERE name = 'vpn');
+
+-- Посмотреть роли realm
+SELECT id, name, description FROM keycloak_role WHERE realm_id = (SELECT id FROM realm WHERE name = 'vpn');
+
+-- Выйти
+\q
+```
+
+### Xray
+
+```bash
+# Посмотреть конфигурацию Xray
+cat xray-config.json
+
+# Посмотреть логи Xray (через Spring Boot)
+docker logs vpn-server | grep Xray
+
+# Проверить работает ли Xray на порту 443
+netstat -an | findstr :443
+
+# Или через PowerShell
+Test-NetConnection -ComputerName localhost -Port 443
+```
+
+### Keycloak
+
+```bash
+# Зайти в Keycloak CLI
+docker exec -it keycloak /opt/keycloak/bin/kcadm.sh
+
+# Экспортировать realm конфигурацию
+docker exec -it keycloak /opt/keycloak/bin/kc.sh export --dir /tmp --realm vpn
+
+# Посмотреть экспортированный файл
+docker exec -it keycloak cat /tmp/vpn-realm.json
+```
+
+### Проверка Сервисов
+
+```bash
+# Проверить доступность Spring Boot
+curl -k https://localhost:8080/
+
+# Проверить доступность Keycloak
+curl http://localhost:8180/
+
+# Проверить Keycloak realm
+curl http://localhost:8180/realms/vpn/.well-known/openid-configuration
+
+# Проверить PostgreSQL VPN
+docker exec vpn-postgres pg_isready -U postgres
+
+# Проверить PostgreSQL Keycloak
+docker exec keycloak-postgres pg_isready -U keycloak
+```
+
+### Очистка и Сброс
+
+```bash
+# Удалить все контейнеры и volumes (ОСТОРОЖНО - удалит все данные!)
+docker-compose down -v
+
+# Удалить только Keycloak данные
+docker volume rm vpn_keycloak-postgres-data
+
+# Удалить только VPN данные
+docker volume rm vpn_postgres-data
+
+# Пересоздать всё с нуля
+docker-compose down -v
+docker-compose up -d
+
+# Пересоздать только Keycloak с автоимпортом realm
+docker-compose down keycloak keycloak-postgres
+docker volume rm vpn_keycloak-postgres-data
+docker-compose up keycloak-postgres keycloak -d
+```
+
+### Бэкап и Восстановление
+
+```bash
+# Бэкап VPN базы данных
+docker exec vpn-postgres pg_dump -U postgres vpn_db > backup_vpn_$(date +%Y%m%d).sql
+
+# Восстановление VPN базы
+cat backup_vpn_20260207.sql | docker exec -i vpn-postgres psql -U postgres -d vpn_db
+
+# Бэкап Keycloak базы
+docker exec keycloak-postgres pg_dump -U keycloak keycloak_db > backup_keycloak_$(date +%Y%m%d).sql
+
+# Восстановление Keycloak базы
+cat backup_keycloak_20260207.sql | docker exec -i keycloak-postgres psql -U keycloak -d keycloak_db
+```
+
+### Мониторинг
+
+```bash
+# Посмотреть использование ресурсов контейнерами
+docker stats
+
+# Посмотреть использование дискового пространства
+docker system df
+
+# Посмотреть сетевые подключения
+docker network ls
+docker network inspect vpn_vpn-network
+
+# Посмотреть volumes
+docker volume ls
+docker volume inspect vpn_postgres-data
+```

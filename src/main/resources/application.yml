@@ -47,11 +47,17 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:
           keycloak:
-            issuer-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:vpn}
+            # Для браузера (внешний URL)
+            authorization-uri: http://localhost:8180/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/auth
+            # Для Spring Boot (внутренний Docker URL)
+            token-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/token
+            user-info-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/userinfo
+            jwk-set-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/certs
             user-name-attribute: preferred_username
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/${KEYCLOAK_REALM:vpn}
+          # Для валидации JWT (внутренний Docker URL)
+          issuer-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}
 
 # Настройки VPN сервера
 vpn:

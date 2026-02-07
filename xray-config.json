@@ -32,7 +32,13 @@
       "port": 443,
       "protocol": "vless",
       "settings": {
-        "clients": [],
+        "clients": [
+          {
+            "id": "78525e0e-cac5-4e80-957a-a9ec897026b0",
+            "email": "VPN Client",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
         "decryption": "none"
       },
       "streamSettings": {

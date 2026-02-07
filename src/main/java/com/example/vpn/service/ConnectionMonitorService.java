@@ -24,7 +24,7 @@ import java.time.ZoneId;
 public class ConnectionMonitorService {
     
     private final PendingClientService pendingClientService;
-    private final XrayGrpcService xrayGrpcService;
+    private final XrayGrpcClient xrayGrpcClient;
     private final VpnClientRepository vpnClientRepository;
     private final TaskScheduler taskScheduler;
     
@@ -60,7 +60,7 @@ public class ConnectionMonitorService {
         
         try {
             // Запрашиваем статистику у Xray
-            XrayGrpcService.UserStats stats = xrayGrpcService.getUserStats(uuid);
+            XrayGrpcClient.UserStats stats = xrayGrpcClient.getUserStats(uuid);
             
             if (stats.hasTraffic()) {
                 // Клиент подключился! Сохраняем в БД
@@ -83,7 +83,7 @@ public class ConnectionMonitorService {
                 // Клиент НЕ подключился за 5 минут - удаляем
                 log.warn("⏱️ Клиент {} НЕ подключился за 5 минут. Удаляем...", uuid);
                 
-                xrayGrpcService.removeUser(uuid);
+                xrayGrpcClient.removeUser(uuid);
                 pendingClientService.remove(uuid);
                 
                 log.info("🗑️ Клиент {} удалён из Xray и pending", uuid);

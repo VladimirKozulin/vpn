@@ -25,7 +25,7 @@ public class HomeController {
     private final ConfigService configService;
     private final QrCodeService qrCodeService;
     private final XrayService xrayService;
-    private final XrayGrpcService xrayGrpcService;
+    private final XrayGrpcClient xrayGrpcClient;
     private final PendingClientService pendingClientService;
     private final ConnectionMonitorService connectionMonitorService;
     
@@ -43,9 +43,9 @@ public class HomeController {
             String uuid = UUID.randomUUID().toString();
             String deviceInfo = "VPN Client";
             
-            // Добавляем в Xray (пока через конфиг, TODO: через gRPC)
+            // Добавляем в Xray через gRPC
             log.info("🔧 Добавление клиента в Xray: {}", uuid);
-            xrayGrpcService.addUser(uuid, deviceInfo);
+            xrayGrpcClient.addUser(uuid, deviceInfo);
             
             // Сохраняем в pending (в памяти)
             PendingClient pendingClient = new PendingClient(uuid, deviceInfo);

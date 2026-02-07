@@ -10,12 +10,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        use_sql_comments: true
+        format_sql: false
+        use_sql_comments: false
         jdbc:
           lob:
             non_contextual_creation: true
@@ -54,3 +54,9 @@ vpn:
 logging:
   level:
     com.example.vpn: DEBUG
+    org.hibernate: WARN  # Убираем подробные логи Hibernate
+    org.springframework.web: INFO  # Убираем DEBUG логи Spring Web
+    org.springframework.boot: INFO  # Убираем DEBUG логи Spring Boot
+  pattern:
+    console: "%d{dd.MM HH:mm:ss} %clr(%-5level) %clr(%logger{20}){cyan} : %msg%n"
+    # Формат: 07.02 09:51:09 INFO  HomeController : 🔗 Генерация VLESS ссылки...

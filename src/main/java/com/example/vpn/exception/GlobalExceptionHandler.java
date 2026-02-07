@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -18,6 +19,15 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    
+    /**
+     * Игнорируем отсутствие статических ресурсов (favicon.ico и т.д.)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Void> handleNoResourceFound(NoResourceFoundException ex) {
+        // Не логируем - это нормальная ситуация для favicon.ico
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
     
     /**
      * Обработка ошибок валидации (@Valid)

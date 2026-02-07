@@ -113,14 +113,47 @@ public class XrayService {
      * Генерирует конфигурационный файл для Xray в формате JSON
      * Загружает всех активных клиентов из конфига
      * Поддерживает Reality протокол для обхода DPI
+     * Включает gRPC API для управления без перезапуска
      */
     public void generateConfigFile() throws IOException {
         XrayConfig config = new XrayConfig();
         
-        // Настройка входящего подключения (inbound)
-        XrayConfig.Inbound inbound = new XrayConfig.Inbound();
-        inbound.setPort(vpnProperties.getXrayPort());
-        inbound.setProtocol("vless");
+        // === Логирование ===
+        XrayConfig.Log logConfig = new XrayConfig.Log();
+        logConfig.setLoglevel("info");
+        config.setLog(logConfig);
+        
+        // === gRPC API ===
+        XrayConfig.Api api = new XrayConfig.Api();
+        api.setTag("api");
+        api.setListen(vpnProperties.getApiServer());
+        api.setServices(List.of("HandlerService", "StatsService", "LoggerService"));
+        config.setApi(api);
+        
+        // === Статистика ===
+        config.setStats(new XrayConfig.Stats());
+        
+        // === Политики ===
+        XrayConfig.Policy policy = new XrayConfig.Policy();
+        
+        // Создаём Map для уровней политик
+        java.util.Map<String, XrayConfig.PolicyLevel> levels = new java.util.HashMap<>();
+        levels.put("0", new XrayConfig.PolicyLevel());
+        policy.setLevels(levels);
+        
+        XrayConfig.PolicySystem policySystem = new XrayConfig.PolicySystem();
+        policySystem.setStatsInboundUplink(true);
+        policySystem.setStatsInboundDownlink(true);
+        policySystem.setStatsOutboundUplink(true);
+        policySystem.setStatsOutboundDownlink(true);
+        policy.setSystem(policySystem);
+        config.setPolicy(policy);
+        
+        // === Настройка входящего подключения (inbound) для VPN ===
+        XrayConfig.Inbound vpnInbound = new XrayConfig.Inbound();
+        vpnInbound.setTag(vpnProperties.getInboundTag());
+        vpnInbound.setPort(vpnProperties.getXrayPort());
+        vpnInbound.setProtocol("vless");
         
         // Загружаем всех активных клиентов
         List<VpnClient> activeClients = vpnClientService.getActiveClients();
@@ -141,9 +174,9 @@ public class XrayService {
             })
             .collect(Collectors.toList());
         
-        XrayConfig.InboundSettings inboundSettings = new XrayConfig.InboundSettings();
-        inboundSettings.setClients(xrayClients);
-        inbound.setSettings(inboundSettings);
+        XrayConfig.InboundSettings vpnInboundSettings = new XrayConfig.InboundSettings();
+        vpnInboundSettings.setClients(xrayClients);
+        vpnInbound.setSettings(vpnInboundSettings);
         
         // Настройка транспорта с Reality
         XrayConfig.StreamSettings streamSettings = new XrayConfig.StreamSettings();
@@ -171,10 +204,11 @@ public class XrayService {
             streamSettings.setSecurity("none");
         }
         
-        inbound.setStreamSettings(streamSettings);
-        config.setInbounds(List.of(inbound));
+        vpnInbound.setStreamSettings(streamSettings);
         
-        // Настройка исходящего подключения (outbound) - прямой доступ в интернет
+        config.setInbounds(List.of(vpnInbound));
+        
+        // === Настройка исходящего подключения (outbound) - прямой доступ в интернет ===
         XrayConfig.Outbound outbound = new XrayConfig.Outbound();
         outbound.setProtocol("freedom"); // "freedom" = прямое подключение без прокси
         outbound.setTag("direct");
@@ -186,6 +220,7 @@ public class XrayService {
         Files.writeString(Path.of(vpnProperties.getConfigPath()), jsonConfig);
         
         log.info("✅ Конфигурационный файл создан с {} клиентами", xrayClients.size());
+        log.info("🔧 gRPC API включен на {}", vpnProperties.getApiServer());
         log.debug("Содержимое конфига:\n{}", jsonConfig);
     }
     

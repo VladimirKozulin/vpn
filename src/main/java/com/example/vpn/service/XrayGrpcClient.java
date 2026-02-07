@@ -67,10 +67,23 @@ public class XrayGrpcClient {
         try {
             log.info("🔧 Добавление пользователя через gRPC: UUID={}, email={}", uuid, email);
             
-            // Создаём пользователя
+            // Создаём VLESS Account с UUID
+            com.xray.proxy.vless.Account vlessAccount = com.xray.proxy.vless.Account.newBuilder()
+                .setId(uuid)
+                .setFlow("xtls-rprx-vision")  // Для Reality
+                .build();
+            
+            // Упаковываем Account в TypedMessage
+            TypedMessage accountMsg = TypedMessage.newBuilder()
+                .setType("xray.proxy.vless.Account")
+                .setValue(vlessAccount.toByteString())
+                .build();
+            
+            // Создаём пользователя с Account
             User user = User.newBuilder()
-                .setEmail(email)
+                .setEmail(uuid)  // Используем UUID как email для уникальной идентификации
                 .setLevel(0)
+                .setAccount(accountMsg)
                 .build();
             
             // Создаём операцию добавления
@@ -78,10 +91,10 @@ public class XrayGrpcClient {
                 .setUser(user)
                 .build();
             
-            // Упаковываем в TypedMessage
+            // Упаковываем операцию в TypedMessage
             TypedMessage operation = TypedMessage.newBuilder()
-                .setType("xray.proxy.vless.Account")
-                .setValue(ByteString.copyFrom(uuid.getBytes()))
+                .setType("xray.app.proxyman.command.AddUserOperation")
+                .setValue(addOp.toByteString())
                 .build();
             
             // Отправляем запрос
@@ -103,13 +116,13 @@ public class XrayGrpcClient {
     /**
      * Удалить пользователя через gRPC (БЕЗ перезапуска!)
      */
-    public void removeUser(String email) {
+    public void removeUser(String uuid) {
         try {
-            log.info("🔧 Удаление пользователя через gRPC: email={}", email);
+            log.info("🔧 Удаление пользователя через gRPC: UUID={}", uuid);
             
-            // Создаём операцию удаления
+            // Создаём операцию удаления (используем UUID как email)
             RemoveUserOperation removeOp = RemoveUserOperation.newBuilder()
-                .setEmail(email)
+                .setEmail(uuid)  // UUID используется как email
                 .build();
             
             // Упаковываем в TypedMessage
@@ -126,7 +139,7 @@ public class XrayGrpcClient {
             
             handlerStub.alterInbound(request);
             
-            log.info("✅ Пользователь удалён через gRPC: {}", email);
+            log.info("✅ Пользователь удалён через gRPC: {}", uuid);
             
         } catch (Exception e) {
             log.error("❌ Ошибка удаления пользователя через gRPC", e);

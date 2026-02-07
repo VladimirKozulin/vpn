@@ -70,13 +70,9 @@ public class ConfigService {
         
         // Название подключения (будет отображаться в клиенте)
         String name = deviceInfo != null ? deviceInfo : "VPN-Client";
-        
-        try {
-            name = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException e) {
-            log.warn("Не удалось закодировать имя клиента: {}", name);
-        }
-        
+
+        name = URLEncoder.encode(name, StandardCharsets.UTF_8);
+
         String vlessLink = base + params.toString() + "#" + name;
         
         log.debug("VLESS ссылка: {}", vlessLink);

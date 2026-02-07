@@ -78,9 +78,8 @@ public class ApplicationStartupListener {
             xrayService.startXray();
             
             log.info("=".repeat(60));
-            log.info("✅ VPN сервер успешно запущен");
-            log.info("🌐 Веб-интерфейс: http://localhost:8080/");
-            log.info("📱 QR коды доступны через API");
+            log.info("✅ VPN сервер запущен");
+            log.info("🌐 Веб-интерфейс: https://localhost:8080/");
             log.info("=".repeat(60));
         } catch (Exception e) {
             log.error("=".repeat(60));

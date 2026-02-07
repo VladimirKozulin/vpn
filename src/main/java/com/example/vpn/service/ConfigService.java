@@ -28,10 +28,10 @@ public class ConfigService {
      * С Reality: vless://UUID@IP:443?encryption=none&flow=xtls-rprx-vision&security=reality
      *            &pbk=PUBLIC_KEY&fp=chrome&sni=www.microsoft.com&sid=SHORT_ID&type=tcp#NAME
      */
-    public String generateVlessLink(VpnClient client) {
+    public String generateVlessLink(String uuid, String deviceInfo) {
         // Базовая часть: vless://UUID@адрес:порт
         String base = String.format("vless://%s@%s:%d",
-            client.getUuid(),
+            uuid,
             vpnProperties.getServerAddress(),
             vpnProperties.getXrayPort()
         );
@@ -61,16 +61,15 @@ public class ConfigService {
                 params.append("&sid=").append(shortId);
             }
             
-            log.info("✅ Сгенерирована VLESS+Reality ссылка для клиента UUID: {}", client.getUuid());
+            log.info("✅ Сгенерирована VLESS+Reality ссылка для клиента UUID: {}", uuid);
         } else {
             // Без Reality (небезопасно!)
             params.append("&security=none");
-            log.warn("⚠️ Сгенерирована VLESS ссылка БЕЗ Reality для клиента UUID: {}", client.getUuid());
+            log.warn("⚠️ Сгенерирована VLESS ссылка БЕЗ Reality для клиента UUID: {}", uuid);
         }
         
         // Название подключения (будет отображаться в клиенте)
-        String name = client.getDeviceInfo() != null ? 
-            client.getDeviceInfo() : "VPN-Client";
+        String name = deviceInfo != null ? deviceInfo : "VPN-Client";
         
         try {
             name = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());

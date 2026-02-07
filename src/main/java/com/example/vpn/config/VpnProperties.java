@@ -23,6 +23,12 @@ public class VpnProperties {
     // Путь к конфигурационному файлу Xray
     private String configPath;
     
+    // Адрес API сервера Xray (для gRPC команд)
+    private String apiServer = "127.0.0.1:10085";
+    
+    // Тег inbound для добавления пользователей
+    private String inboundTag = "inbound-443";
+    
     // Reality настройки
     private Reality reality = new Reality();
     
@@ -50,4 +56,3 @@ public class VpnProperties {
         private String fingerprint = "chrome";
     }
 }
-

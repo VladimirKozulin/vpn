@@ -1,29 +1,24 @@
 
+# Главный docker-compose файл
 
 services:
+  # PostgreSQL база данных
+  postgres:
+    extends:
+      file: devOps/data/docker-compose.yml
+      service: postgres
+
+  # VPN сервер
   vpn-server:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-      cache_from:
-        - vpn-server:latest
-    container_name: vpn-server
-    ports:
-      - "8080:8080"
-      - "443:443"
-    env_file:
-      - .env
-    volumes:
-      - .:/app
-      - gradle-cache:/home/gradle/.gradle
-    networks:
-      - vpn-network
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
+    extends:
+      file: devOps/server/docker-compose.yml
+      service: vpn-server
 
 volumes:
+  postgres-data:
+    driver: local
   gradle-cache:
+    driver: local
 
 networks:
   vpn-network:

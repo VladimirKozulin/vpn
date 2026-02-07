@@ -1,0 +1,40 @@
+### Тест добавления пользователя через Xray API
+# Добавляет нового пользователя БЕЗ перезапуска Xray
+POST http://localhost:8080/api/test/add-user
+Content-Type: application/json
+
+###
+
+### Тест добавления пользователя с конкретным UUID
+POST http://localhost:8080/api/test/add-user?uuid=test-uuid-123&email=test-user
+Content-Type: application/json
+
+###
+
+### Тест получения статистики пользователя
+# Проверяет есть ли трафик у пользователя
+GET http://localhost:8080/api/test/stats/test-uuid-123
+
+###
+
+### Тест удаления пользователя через Xray API
+# Удаляет пользователя БЕЗ перезапуска Xray
+DELETE http://localhost:8080/api/test/remove-user/test-uuid-123
+
+###
+
+### Полный цикл: добавить → проверить статистику → удалить
+# 1. Добавляем
+POST http://localhost:8080/api/test/add-user?uuid=full-test-uuid&email=full-test
+
+###
+
+# 2. Проверяем статистику (должно быть 0, если не подключался)
+GET http://localhost:8080/api/test/stats/full-test-uuid
+
+###
+
+# 3. Удаляем
+DELETE http://localhost:8080/api/test/remove-user/full-test-uuid
+
+###

@@ -1,10 +1,7 @@
 package com.example.vpn.controller;
 
-import com.example.vpn.model.VpnClient;
-import com.example.vpn.service.ConfigService;
-import com.example.vpn.service.QrCodeService;
-import com.example.vpn.service.VpnClientService;
-import com.example.vpn.service.XrayService;
+import com.example.vpn.model.PendingClient;
+import com.example.vpn.service.*;
 import com.google.zxing.WriterException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,58 +11,54 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.io.IOException;
 import java.util.Base64;
-import java.util.List;
+import java.util.UUID;
 
 /**
  * Контроллер главной страницы
- * Автоматически создает клиента и показывает QR код
+ * Генерирует новую ссылку при каждом обращении
  */
 @Slf4j
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
     
-    private final VpnClientService vpnClientService;
     private final ConfigService configService;
     private final QrCodeService qrCodeService;
     private final XrayService xrayService;
+    private final XrayGrpcService xrayGrpcService;
+    private final PendingClientService pendingClientService;
+    private final ConnectionMonitorService connectionMonitorService;
     
     /**
      * Главная страница с QR кодом
      * GET /
+     * Каждое обращение создаёт нового pending клиента
      */
     @GetMapping("/")
     public String home(Model model) {
         try {
-            log.info("📄 Загрузка главной страницы");
+            log.info("📄 Загрузка главной страницы - генерация нового клиента");
             
-            // Получаем или создаем клиента
-            List<VpnClient> clients = vpnClientService.getAllClients();
-            VpnClient client;
+            // Генерируем новый UUID для клиента
+            String uuid = UUID.randomUUID().toString();
+            String deviceInfo = "VPN Client";
             
-            if (clients.isEmpty()) {
-                // Создаем первого клиента автоматически
-                log.info("👤 Клиентов нет, создаем автоматически");
-                client = new VpnClient();
-                client.setDeviceInfo("VPN Client");
-                client.setIsActive(true);
-                client = vpnClientService.createClient(client);
-                
-                // Перезапускаем Xray
-                log.info("🔄 Перезапуск Xray с новым клиентом...");
-                xrayService.restartXray();
-                log.info("✅ Создан клиент с UUID: {}", client.getUuid());
-            } else {
-                // Берем первого клиента
-                client = clients.get(0);
-                log.info("👤 Используем существующего клиента UUID: {}", client.getUuid());
-            }
+            // Добавляем в Xray (пока через конфиг, TODO: через gRPC)
+            log.info("🔧 Добавление клиента в Xray: {}", uuid);
+            xrayGrpcService.addUser(uuid, deviceInfo);
+            
+            // Сохраняем в pending (в памяти)
+            PendingClient pendingClient = new PendingClient(uuid, deviceInfo);
+            pendingClientService.add(pendingClient);
+            
+            // Планируем проверку через 5 минут
+            connectionMonitorService.scheduleCheck(uuid);
             
             // Генерируем VLESS ссылку
             log.info("🔗 Генерация VLESS ссылки...");
-            String vlessLink = configService.generateVlessLink(client);
+            String vlessLink = configService.generateVlessLink(uuid, deviceInfo);
             
-            // Генерируем QR код и конвертируем в Base64 для встраивания в HTML
+            // Генерируем QR код
             log.info("📱 Генерация QR кода...");
             byte[] qrCode = qrCodeService.generateQrCode(vlessLink, 400, 400);
             String qrCodeBase64 = Base64.getEncoder().encodeToString(qrCode);
@@ -74,12 +67,14 @@ public class HomeController {
             boolean vpnRunning = xrayService.isRunning();
             log.info("🔌 Статус VPN: {}", vpnRunning ? "РАБОТАЕТ" : "ОСТАНОВЛЕН");
             
-            model.addAttribute("client", client);
+            model.addAttribute("uuid", uuid);
             model.addAttribute("vlessLink", vlessLink);
             model.addAttribute("qrCodeBase64", qrCodeBase64);
             model.addAttribute("vpnRunning", vpnRunning);
+            model.addAttribute("expiresAt", pendingClient.getExpiresAt());
             
-            log.info("✅ Главная страница успешно загружена");
+            log.info("✅ Главная страница загружена. UUID: {}, истекает: {}", 
+                uuid, pendingClient.getExpiresAt());
             return "index";
             
         } catch (WriterException | IOException e) {

@@ -51,7 +51,8 @@ spring:
             authorization-uri: http://localhost:8180/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/auth
             # Для Spring Boot (внутренний Docker URL)
             token-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/token
-            user-info-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/userinfo
+            # Отключаем userinfo - будем брать данные из JWT
+            # user-info-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/userinfo
             jwk-set-uri: http://keycloak:8080/realms/${KEYCLOAK_REALM:vpn}/protocol/openid-connect/certs
             user-name-attribute: preferred_username
       resourceserver:

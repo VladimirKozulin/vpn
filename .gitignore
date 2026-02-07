@@ -39,6 +39,11 @@ out/
 ### Environment Variables ###
 .env
 
+### SSL Certificates (приватные ключи не коммитим) ###
+src/main/resources/ssl/keystore.p12
+# Публичный ключ можно коммитить для мобильного приложения
+# src/main/resources/ssl/vpn-server.pem
+
 ### Flutter/Dart ###
 .dart_tool/
 .flutter-plugins
